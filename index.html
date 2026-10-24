@@ -58,14 +58,16 @@ F.bb.addEventListener('load',mode);show(tab);
 /* enlaces */
 const base=location.href.split('#')[0].replace(/[^/]*$/,'');
 const syncCode=()=>{try{const s=JSON.parse(localStorage.ovlS).sync;return s&&s.on&&s.code?s.code:''}catch(e){return ''}};
-function drawLinks(){const sc=syncCode();
-const L=[['🧚 Bebé pelón (autónomo)',base+'bebe.html#live','Corre solo: se conecta a TikFinity con tu configuración. Apaga «Conectar con TikFinity» en la pestaña Bebé si no quieres que cuente doble.'],
+const codeOf=k=>{try{const s=JSON.parse(localStorage.getItem(k));return s&&s.on&&s.code?s.code:''}catch(e){return ''}};
+function drawLinks(){const sc=syncCode(),bs=codeOf('angelito-sayler-v1-sync'),rs=codeOf('ruleta-de-sayler-sync');
+const L=[['🧚 Bebé pelón (autónomo)',base+'bebe.html#live'+(bs?'&s='+bs:''),bs?'Enlace fijo y transparente: cópialo una sola vez. Se actualiza solo cuando cambias algo en la pestaña Bebé (con esa página abierta). Corre solo y se conecta a TikFinity; apaga «Conectar con TikFinity» en la pestaña Bebé si no quieres que cuente doble.':'Corre solo: se conecta a TikFinity con tu configuración (la toma de config/respaldo.json). Apaga «Conectar con TikFinity» en la pestaña Bebé si no quieres que cuente doble.'],
 ['🧚 Bebé pelón (ventana espejo del hub)',base+'bebe.html#directo','Para captura de ventana en el mismo navegador; sigue lo que haces en el hub (fondo chroma).'],
-['🎡 Ruleta (autónoma)',base+'ruleta.html#live','Gira sola con los regalos y ejecuta sus acciones. Apaga TikFinity en la pestaña Ruleta si no quieres doble conteo.'],
+['🎡 Ruleta (autónoma)',base+'ruleta.html#live'+(rs?'&s='+rs:''),rs?'Enlace fijo y transparente: cópialo una sola vez. Se actualiza solo cuando cambias algo en la pestaña Ruleta (con esa página abierta). Gira sola con los regalos y ejecuta sus acciones; apaga TikFinity en la pestaña Ruleta si no quieres doble conteo.':'Gira sola con los regalos y ejecuta sus acciones (toma la configuración de config/respaldo.json). Apaga TikFinity en la pestaña Ruleta si no quieres doble conteo.'],
 ['🎡 Ruleta (ventana espejo del hub)',base+'ruleta.html#directo','Para captura de ventana en el mismo navegador (fondo chroma).'],
 ...[['metas','🎯 Metas'],['barra','📊 Barra'],['cont','🔢 Contador'],['time','⏳ Temporizador'],['ev','💬 Últimos eventos']].map(([k,t])=>[t+' (overlay)',base+'overlay.html#o='+k+(sc?'&s='+sc:''),sc?'Enlace fijo y transparente: cópialo una sola vez. Se actualiza solo cuando cambias algo en la pestaña Overlays (con esa página abierta).':'Enlace propio, transparente. Usa el diseño y los valores que tienes guardados (en OBS/TikTok los toma de config/respaldo.json; vuelve a exportarlo si cambias algo).'])];
 $('#links').innerHTML=L.map(([t,u,n])=>`<div class="lk"><b>${t}</b><input readonly value="${u}"><button class="a" data-u="${u}">📋 Copiar</button><small>${n}</small></div>`).join('')}
-drawLinks();addEventListener('storage',e=>{if(e.key==='ovlS')drawLinks()});
+drawLinks();addEventListener('storage',e=>{if(e.key==='ovlS'||e.key==='angelito-sayler-v1-sync'||e.key==='ruleta-de-sayler-sync')drawLinks()});
+setTimeout(drawLinks,1500);
 $('#links').onclick=e=>{const b=e.target.closest('[data-u]');if(!b)return;navigator.clipboard.writeText(b.dataset.u).catch(()=>{});b.textContent='✔ Copiado';setTimeout(()=>b.textContent='📋 Copiar',1500)};
 /* respaldo */
 const msg=t=>$('#msg').textContent=t;

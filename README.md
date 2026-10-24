@@ -18,6 +18,16 @@ En «Overlays», bajo el botón de copiar, está la casilla **🔗 Enlace fijo**
 - El enlace guarda su última copia en el propio OBS/TikTok: si no hay internet, muestra lo último que recibió.
 - Si desmarcas la casilla, el enlace vuelve a llevar toda la configuración dentro (y hay que copiarlo de nuevo cada vez).
 
+## Enlace fijo del bebé y de la ruleta (novedad)
+En la pestaña **Bebé** (zona del directo) y en la pestaña **Ruleta** (debajo de «Abrir en otra ventana») está la casilla **🔗 Enlace fijo**, igual que en los overlays.
+- Copias el enlace **una sola vez** en OBS / TikTok LIVE Studio: `bebe.html#live&s=CODIGO` o `ruleta.html#live&s=CODIGO` (también salen en «Enlaces y respaldo»).
+- Lo que cambies en el panel (textos, imágenes, regalos, sonidos, contadores…) le llega solo y se aplica sin recargar. Hay que tener el panel abierto mientras cambias.
+- Las imágenes grandes viajan aparte y **una sola vez** cada una; el enlace las guarda en su navegador. Si una imagen pesa mucho (más de unos 220 KB) no viaja: el panel te avisa.
+- No viaja el progreso de la ruleta (el enlace lleva el suyo) ni la biblioteca de audios guardados como archivo (viven en IndexedDB de cada navegador; los sonidos por enlace sí).
+- El enlace siempre se conecta a TikFinity por su cuenta (en el panel puedes dejarlo apagado para que no cuente doble).
+- El enlace guarda su última copia en el propio OBS/TikTok: si no hay internet, muestra lo último que recibió.
+- La configuración pasa unas horas por ntfy.sh y quien tenga el enlace podría verla. Si desmarcas la casilla, el enlace vuelve a usar `config/respaldo.json`.
+
 ## Metas
 - Cada meta tiene **✋ A mano**: progreso que ya llevaba (con botones −100, +10, +100, +1000 y 0). Cuenta como conseguido y las monedas nuevas llenan lo que falte. Se guarda con tu configuración.
 - La vista previa muestra el progreso REAL de tu directo (también si el overlay corre en OBS o TikTok, con el enlace fijo; tarda unos segundos en reflejar cambios). Debajo de cada meta aparece «En el directo lleva X / Y».

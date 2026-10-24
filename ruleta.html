@@ -550,6 +550,7 @@ details.rule .rbody .help + .row{margin-top:12px}
           <button class="ghost" id="popBtn" type="button">Abrir en otra ventana</button>
         </div>
         <p class="popmsg" id="popMsg"></p>
+        <div id="synBox"></div>
       </div>
 
       <div class="panel tik-panel">
@@ -768,7 +769,7 @@ details.rule .rbody .help + .row{margin-top:12px}
 (function(){
   const {setTimeout,setInterval,clearTimeout,clearInterval} = window.__W, requestAnimationFrame = window.__W.raf;
   const $ = s => document.querySelector(s);
-  const IS_POPUP = location.hash === '#directo', IS_LIVE = location.hash === '#live';
+  const IS_POPUP = location.hash === '#directo', IS_LIVE = /^#live(&|$)/.test(location.hash);
   if(IS_POPUP || IS_LIVE) document.body.classList.add('directo');
 
   const PALETTE = ['#d9c9ff','#f6a9d3','#b4ccff','#c3a8f5','#ffd0e8','#9f8ce6','#ecb9ff','#8fb0f5'];
@@ -1148,6 +1149,7 @@ details.rule .rbody .help + .row{margin-top:12px}
       for(const k in FIELDS){ const el = FIELDS[k]; d[k] = el.type === 'checkbox' ? el.checked : el.value; }
       d.vts = vData();
       localStorage.setItem(STORE, JSON.stringify(d));
+      if(!IS_LIVE && window.SaylerSync) SaylerSync.changed();
     }catch(e){}
   }
   function load(){
@@ -1812,7 +1814,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   const fmtDur = d => { if(!(d > 0)) return ''; const t = Math.round(d); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
   function sNote(t){ sNoteEl.textContent = t; clearTimeout(sNoteT); sNoteT = setTimeout(() => { sNoteEl.textContent = ''; }, 5000); }
   function sLogAdd(t){ const d = new Date().toLocaleTimeString(); sLog.textContent = (d + '  ' + t + '\n' + (sLog.textContent === 'Sin actividad.' ? '' : sLog.textContent)).slice(0, 2500); }
-  function sSave(){ try{ localStorage.setItem(SKEY, JSON.stringify({ items:S.items, map:S.map, vol:S.vol, auto:S.auto })); }catch(e){} }
+  function sSave(){ try{ localStorage.setItem(SKEY, JSON.stringify({ items:S.items, map:S.map, vol:S.vol, auto:S.auto })); if(!IS_POPUP && !IS_LIVE && window.SaylerSync) SaylerSync.changed(); }catch(e){} }
   function sLoad(){
     try{
       const d = JSON.parse(localStorage.getItem(SKEY));
@@ -2266,7 +2268,7 @@ details.rule .rbody .help + .row{margin-top:12px}
     return c;
   }
   function cSave(){
-    try{ localStorage.setItem(CKEY, JSON.stringify({ auto:cAuto.checked, defs:C.defs })); }catch(e){}
+    try{ localStorage.setItem(CKEY, JSON.stringify({ auto:cAuto.checked, defs:C.defs })); if(!IS_POPUP && !IS_LIVE && window.SaylerSync) SaylerSync.changed(); }catch(e){}
   }
   function cLoad(){
     try{
@@ -2803,8 +2805,15 @@ details.rule .rbody .help + .row{margin-top:12px}
     vtsInit();
     updateStats(); pushIdle(true);
     setInterval(() => { updateStats(); pushIdle(); processQueue(); }, 400);
+    if(!IS_LIVE && window.SaylerSync) SaylerSync.mount($('#synBox'), { skey:'ruleta-de-sayler-sync', keys:[STORE, SKEY, CKEY] });
     window.addEventListener('beforeunload', () => { try{ if(popupWin && !popupWin.closed) popupWin.close(); }catch(e){} });
   }
+  /* enlace fijo: cuando llega una configuración nueva se aplica sin recargar */
+  window.__synApply = () => {
+    if(IS_POPUP) return;
+    try{ load(); applySettings(); renderPreview(); sLoad(); sOpts(true); cLoad(); cRenderList(); vtsOpts(true); pushIdle(true); }
+    catch(e){ console.error(e); }
+  };
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => {
     if(IS_POPUP){ if(!busy) drawWheel(mainCanvas, popupOpts.length ? popupOpts : parse()); } else renderPreview();
   });

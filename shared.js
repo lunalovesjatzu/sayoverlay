@@ -16,7 +16,7 @@
  ['pointerdown','keydown'].forEach(e=>addEventListener(e,wake,{once:true,passive:true}));
  /* 3) Modo enlace transparente (#live): sin fondo verde */
  const hs=location.hash;
- if(hs==='#live'){document.documentElement.classList.add('live');const s=document.createElement('style');
+ if(/^#live(&|$)/.test(hs)){document.documentElement.classList.add('live');const s=document.createElement('style');
   s.textContent='html.live,html.live body{background:transparent!important}html.live .stage{background:transparent!important;outline:none!important}';document.documentElement.appendChild(s)}
  /* el hub cambia entre vista completa y mini (dock del bebé) */
  addEventListener('message',e=>{const d=e.data;if(d&&d.sayMode)document.body.classList.toggle('mini',d.sayMode==='mini')});
@@ -31,4 +31,99 @@
  try{if(!window.__NOSYNC&&!window.opener&&window.parent===window&&location.protocol!=='file:'&&!/[#&](s|c)=/.test(location.hash)&&!(localStorage.getItem('ovlS')&&localStorage.getItem('__edited'))){
   const x=new XMLHttpRequest();x.open('GET','config/respaldo.json?'+Date.now(),false);x.send();
   if(x.status===200){const j=JSON.parse(x.responseText);if(j&&j.data&&String(j.stamp)!==localStorage.getItem('__stamp')){C.load(j.data);localStorage.setItem('__stamp',String(j.stamp))}}}}catch(e){}
+})();
+
+/* 5) Enlace fijo para el bebé y la ruleta: la configuración viaja por ntfy (igual que en los overlays).
+      Panel: publica los cambios. Enlace (#live&s=CODIGO): los recibe solo y los aplica sin recargar. */
+(function(){
+ const W=window.__W,H=window.__SYNC_HOST||'ntfy.sh',web=/^https?:\/\//.test(H),HU=web?H:'https://'+H,WU=web?H.replace(/^http/,'ws'):'wss://'+H;
+ const hp=new URLSearchParams(location.hash.slice(1)),CODE=hp.get('s')||'',LIVE=hp.has('live')&&!!CODE&&!window.__NOSYNC;
+ const PFX=/^(angelito-sayler|ruleta-de-sayler)/,SZ=2800,MIN=3000,MAXIMG=300000,TOK='@img:';
+ /* lo que NO viaja: el enlace conserva lo suyo (progreso de la ruleta) y fuerza la conexión con TikFinity */
+ const RULES={'angelito-sayler-v1':{drop:['on'],force:{on:1}},'ruleta-de-sayler-v1':{drop:['st','tikOn'],force:{tikOn:true}}};
+ const sleep=ms=>new Promise(r=>W.setTimeout(r,ms));
+ const newCode=()=>'sayler-'+[...crypto.getRandomValues(new Uint8Array(12))].map(x=>(x%36).toString(36)).join('');
+ const b64=u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)},unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+ async function zipTxt(t){try{if(window.CompressionStream){const r=await new Response(new Blob([t]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer();return 'z'+b64(new Uint8Array(r))}}catch(e){}return 'p'+btoa(unescape(encodeURIComponent(t)))}
+ async function unzipTxt(s){if(s[0]=='z')return await new Response(new Blob([unb64(s.slice(1))]).stream().pipeThrough(new DecompressionStream('deflate'))).text();return decodeURIComponent(escape(atob(s.slice(1))))}
+ function hash(s){let a=0xdeadbeef,b=0x41c6ce57;for(let i=0;i<s.length;i++){const c=s.charCodeAt(i);a=Math.imul(a^c,2654435761);b=Math.imul(b^c,1597334677)}
+  a=Math.imul(a^(a>>>16),2246822507)^Math.imul(b^(b>>>13),3266489909);b=Math.imul(b^(b>>>16),2246822507)^Math.imul(a^(a>>>13),3266489909);return(b>>>0).toString(36)+(a>>>0).toString(36)+s.length.toString(36)}
+ function walk(v,f){if(Array.isArray(v)){for(let i=0;i<v.length;i++)v[i]=walk(v[i],f);return v}if(v&&typeof v==='object'){for(const k in v)v[k]=walk(v[k],f);return v}return f(v)}
+ /* las imágenes grandes viajan aparte (una sola vez cada una) y en la configuración queda una marca */
+ function strip(b,media,sk){const o={};for(const k in b){let j;try{j=JSON.parse(b[k])}catch(e){o[k]=b[k];continue}
+  const R=RULES[k];if(R&&j&&typeof j==='object')R.drop.forEach(f=>delete j[f]);
+  walk(j,v=>{if(typeof v==='string'&&v.length>=MIN&&/^data:[^,;]{1,60};base64,/i.test(v)){if(v.length>MAXIMG){if(sk)sk.n++;return ''}const h=hash(v);media[h]=v;return TOK+h}return v});o[k]=JSON.stringify(j)}return o}
+ const SS=window.SaylerSync={live:LIVE,code:CODE,changed(){},mount:null};
+ let IM={};
+
+ /* ===== ENLACE (OBS / TikTok): recibe y aplica ===== */
+ if(LIVE){
+  /* el enlace usa su propia copia de la configuración: nunca pisa la del panel aunque estén en el mismo navegador */
+  try{const P=Storage.prototype,g=P.getItem,s=P.setItem,r=P.removeItem,m=(t,k)=>t===window.localStorage&&PFX.test(k)?'sx:'+k:k;
+   P.getItem=function(k){return g.call(this,m(this,k))};P.setItem=function(k,v){return s.call(this,m(this,k),v)};P.removeItem=function(k){return r.call(this,m(this,k))}}catch(e){}
+  const img=h=>IM[h]||(()=>{try{return localStorage.getItem('saylerImg:'+h)}catch(e){return null}})();
+  function resolve(b,miss){const o={};for(const k in b){let j;try{j=JSON.parse(b[k])}catch(e){o[k]=b[k];continue}
+   walk(j,v=>{if(typeof v==='string'&&v.startsWith(TOK)){const h=v.slice(TOK.length),im=img(h);if(im)return im;miss.push(h);return ''}return v});o[k]=JSON.stringify(j)}return o}
+  function applyBundle(b){for(const k in b){let t=b[k];const R=RULES[k];
+   if(R){try{const o=JSON.parse(t);let old={};try{old=JSON.parse(localStorage.getItem(k))||{}}catch(e){}
+    R.drop.forEach(f=>{if(f in old)o[f]=old[f];else delete o[f]});Object.assign(o,R.force);t=JSON.stringify(o)}catch(e){}}
+   try{localStorage.setItem(k,t)}catch(e){}}}
+  let cfgZ='',cvBest=0,lastApplied='',tm=0,waitT=0,waitCv=0;
+  const schedule=()=>{W.clearTimeout(tm);tm=W.setTimeout(applyLatest,500)};
+  async function applyLatest(){const z=cfgZ,cv=cvBest;if(!z)return;let t,b;try{t=await unzipTxt(z);b=JSON.parse(t)}catch(e){return}
+   const miss=[],res=resolve(b,miss);
+   if(miss.length&&waitCv!==cv){waitCv=cv;W.clearTimeout(waitT);waitT=W.setTimeout(applyLatest,5000);return}
+   const fin=JSON.stringify(res);if(fin===lastApplied)return;lastApplied=fin;
+   applyBundle(res);try{localStorage.setItem('saylerRx:'+CODE,JSON.stringify({cv,cfg:t}))}catch(e){}
+   if(!miss.length){try{const keep=new Set((t.match(/@img:[a-z0-9]+/g)||[]).map(x=>x.slice(TOK.length)));
+    for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('saylerImg:')&&!keep.has(k.slice(10)))localStorage.removeItem(k)}}catch(e){}}
+   try{window.__synApply&&window.__synApply()}catch(e){console.error(e)}}
+  /* al abrir: la última copia que recibió (sirve aunque no haya internet) */
+  try{const rx=JSON.parse(localStorage.getItem('saylerRx:'+CODE));if(rx&&rx.cfg){cvBest=+rx.cv||0;const res=resolve(JSON.parse(rx.cfg),[]);lastApplied=JSON.stringify(res);applyBundle(res)}}catch(e){}
+  const G={};let ws=null,wt=0;
+  function onMsg(ev){let o,x;try{o=JSON.parse(ev.data);if(o.event!=='message')return;x=JSON.parse(o.message)}catch(e){return}
+   if(!x||x.v!==2||!(x.n>0))return;const k=x.t+':'+x.id,g=G[k]||(G[k]={n:x.n,p:{},done:0});if(g.done)return;g.p[x.i]=x.d;
+   if(Object.keys(g.p).length<g.n)return;g.done=1;const s=Array.from({length:g.n},(_,i)=>g.p[i]).join('');g.p=null;
+   if(x.t==='m'){IM[x.id]=s;try{localStorage.setItem('saylerImg:'+x.id,s)}catch(e){}schedule()}
+   else if(x.t==='c'&&+x.id>cvBest){cvBest=+x.id;cfgZ=s;schedule()}}
+  function open(){let w;try{w=new WebSocket(WU+'/'+encodeURIComponent(CODE)+'/ws?since=12h')}catch(e){wt=W.setTimeout(open,5000);return}
+   ws=w;w.onmessage=onMsg;w.onclose=()=>{if(ws===w)wt=W.setTimeout(open,4000)}}
+  open();
+ }
+
+ /* ===== PANEL: publica los cambios ===== */
+ function publisher(o){
+  let st={on:1,code:''};try{Object.assign(st,JSON.parse(localStorage.getItem(o.skey)))}catch(e){}
+  if(!st.code)st.code=newCode();
+  const sv=()=>{try{localStorage.setItem(o.skey,JSON.stringify(st))}catch(e){}};sv();
+  const say=t=>{try{o.onStatus&&o.onStatus(t)}catch(e){}},SK='saylerPub:'+st.code;
+  const loadSent=()=>{try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return{}}},saveSent=s=>{try{localStorage.setItem(SK,JSON.stringify(s))}catch(e){}};
+  const collect=()=>{const b={};o.keys.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)b[k]=v}catch(e){}});return b};
+  async function post(body){for(let a=0;a<8;a++){try{const r=await fetch(HU+'/'+encodeURIComponent(st.code),{method:'POST',body});if(r.ok)return;if(r.status!==429&&r.status<500)break}catch(e){}await sleep(a<2?2500:6000)}throw new Error('post')}
+  async function parts(t,id,text,label){const n=Math.ceil(text.length/SZ);for(let i=0;i<n;i++){if(label&&n>6&&i%6===0)say(label+' ('+i+'/'+n+')');await post(JSON.stringify({v:2,t,id,i,n,d:text.slice(i*SZ,(i+1)*SZ)}))}}
+  let lastTxt='',busy=0,timer=0;
+  const soon=now=>{W.clearTimeout(timer);if(!st.on)return;timer=W.setTimeout(()=>pubNow(now),now?250:2500)};
+  async function pubNow(force){if(!st.on||busy)return;const media={},sk={n:0},txt=JSON.stringify(strip(collect(),media,sk)),sent=loadSent(),now=Date.now();
+   const need=Object.keys(media).filter(h=>!sent[h]||now-sent[h]>6*36e5);
+   if(txt===lastTxt&&!force&&!need.length)return;busy=1;let ok=0;const skipped=sk.n;
+   try{let i=0;for(const h of need){i++;await parts('m',h,media[h],'⏳ Subiendo imagen '+i+' de '+need.length);sent[h]=Date.now();saveSent(sent)}
+    await parts('c',Date.now(),await zipTxt(txt));lastTxt=txt;ok=1;
+    say('✔ Enlace al día · '+new Date().toLocaleTimeString()+(skipped?' · ⚠ '+skipped+' imagen(es) pesan demasiado (más de ~220 KB) y no viajan por el enlace: usa una más liviana':''))}
+   catch(e){say('⚠ No pude actualizar el enlace (¿sin internet?). Lo intento otra vez en un momento.');W.clearTimeout(timer);timer=W.setTimeout(()=>pubNow(),30000)}
+   busy=0;if(ok&&JSON.stringify(strip(collect(),{}))!==lastTxt)soon()}
+  return{get on(){return st.on},get code(){return st.code},changed:()=>soon(),start:()=>soon(true),
+   setOn(v){st.on=v?1:0;sv();if(st.on)soon(true);else say('Enlace fijo apagado: el enlace usa la copia de config/respaldo.json.')}}}
+
+ let cur=null;SS.changed=()=>{if(cur)cur.changed()};
+ SS.mount=function(el,o){if(!el||LIVE)return null;
+  if(!document.getElementById('synCss')){const c=document.createElement('style');c.id='synCss';
+   c.textContent='.synbox{margin-top:16px;padding:14px 16px;border:1px dashed rgba(247,240,255,.4);border-radius:18px;text-align:left}.synlb{display:flex;gap:8px;align-items:center;font-weight:700;cursor:pointer}.synrow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.synrow input{flex:1;min-width:160px;background:rgba(255,255,255,.1);color:inherit;border:1px solid rgba(247,240,255,.28);border-radius:12px;padding:8px 10px;font:600 .85rem Quicksand,sans-serif}.synhelp{font-size:.85rem;opacity:.75;line-height:1.5;margin:10px 0 0}body.mini .synbox{display:none}.synmsg{margin:8px 0 0;min-height:1.2em;color:var(--blush,#f4b3d6);font-weight:600;font-size:.9rem}';
+   document.head.appendChild(c)}
+  el.innerHTML='<div class="synbox"><label class="synlb"><input type="checkbox" class="synck"><span>🔗 Enlace fijo: se actualiza solo (no hay que volver a copiarlo)</span></label><div class="synrow"><input type="text" readonly class="synurl"><button type="button" class="ghost sycp">📋 Copiar enlace</button></div><p class="synhelp">Cópialo una sola vez en OBS o TikTok LIVE Studio. Todo lo que cambies aquí le llega solo, mientras tengas esta página abierta. La configuración pasa unas horas por ntfy.sh (el mismo servicio de los overlays) y quien tenga el enlace podría verla. Las imágenes grandes se suben una sola vez. Si lo desmarcas, el enlace usa la copia de <code>config/respaldo.json</code>.</p><p class="synmsg"></p></div>';
+  const q=s=>el.querySelector(s),ck=q('.synck'),url=q('.synurl'),msg=q('.synmsg');
+  const P=publisher({...o,onStatus:t=>{msg.textContent=t}});cur=P;
+  const base=location.href.split('#')[0],draw=()=>{url.value=base+'#live'+(P.on?'&s='+encodeURIComponent(P.code):'')};
+  ck.checked=!!P.on;draw();ck.onchange=()=>{P.setOn(ck.checked);draw()};
+  q('.sycp').onclick=e=>{const b=e.currentTarget;try{navigator.clipboard.writeText(url.value)}catch(x){url.select();document.execCommand('copy')}b.textContent='✔ Copiado';W.setTimeout(()=>b.textContent='📋 Copiar enlace',1500)};
+  P.start();return P};
 })();

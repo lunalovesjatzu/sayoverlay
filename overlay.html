@@ -81,7 +81,7 @@ i.l{display:inline-block;font-style:normal;animation-delay:calc(var(--i)*-.12s)}
 .i-float{animation:idf 5s ease-in-out infinite}@keyframes idf{50%{transform:translateY(-.35em)}}.i-breathe{animation:idb 4s ease-in-out infinite}@keyframes idb{50%{transform:scale(1.025)}}.i-sway{animation:ids 6s ease-in-out infinite}@keyframes ids{50%{transform:rotate(1.2deg)}}.i-glowp{animation:idg 3s ease-in-out infinite}@keyframes idg{50%{filter:brightness(1.3) drop-shadow(0 0 .5em var(--bc))}}
 .o-on::before,.o-on::after{content:var(--orn);position:absolute;font-size:.8em;opacity:.85;color:var(--bc);pointer-events:none}.o-on::before{left:.4em;top:.15em}.o-on::after{right:.4em;bottom:.15em}
 .pl{position:absolute;inset:0;pointer-events:none;overflow:hidden}.pl i{position:absolute;bottom:-1.4em;font-style:normal;opacity:0;animation:pr linear infinite}@keyframes pr{15%{opacity:.9}100%{transform:translate(var(--dx),-14em) rotate(40deg);opacity:0}}
-.ci{height:1.05em;width:auto;vertical-align:-.15em;display:inline-block}.gg input[type=text]{flex:1;width:auto!important;min-width:130px}
+.ci{height:1.05em;width:auto;vertical-align:-.15em;display:inline-block}.mn{align-items:center}.mn>span:first-child{opacity:.85}.pgn{display:inline-flex;gap:6px;align-items:center}.gg input[type=text]{flex:1;width:auto!important;min-width:130px}
 </style></head><body>
 <div class="app" id="app"><h1>Overlays de Sayler</h1>
 <p class="hint">Edita a la izquierda, mira el resultado a la derecha. Cada overlay tiene su URL para pegarla en OBS (Fuente → Navegador).</p>
@@ -95,6 +95,13 @@ i.l{display:inline-block;font-style:normal;animation-delay:calc(var(--i)*-.12s)}
 <label class="fr"><span>Ver en la zona</span><select id="pvm"><option value="one">Solo el overlay que edito</option><option value="all">Escena: todos los activos juntos</option></select></label>
 <div class="bar2"><button id="pop">🪟 Abrir en otra ventana</button><button id="popall">🪟 Abrir los activos</button><button id="popx">✖ Cerrar ventanas</button></div>
 <div class="bar2"><input id="url" readonly><button id="cp">📋 Copiar URL para OBS</button></div>
+<label class="fr"><span>🔗 Enlace fijo: se actualiza solo (no hay que volver a copiarlo)</span><input type="checkbox" id="syc"></label>
+<p class="hint" id="syh">Cópialo <b>una sola vez</b> en OBS o TikTok LIVE Studio. Todo lo que cambies aquí (diseño, metas, tiempos, progreso a mano) le llega solo, mientras tengas esta página abierta. La configuración pasa unas horas por ntfy.sh (el mismo servicio de Ko-fi) y quien tenga el enlace podría verla. Si lo desmarcas, el enlace lleva todo dentro y hay que copiarlo de nuevo cada vez.</p><p class="hint" id="syn"></p>
+<div id="pvx" hidden>
+<label class="fr" id="pgrow"><span>📄 Página de las metas (si no caben todas)</span><span class="pgn"><button id="pgp">◀</button><b id="pgl">1/1</b><button id="pgn">▶</button></span></label>
+<label class="fr" id="pgarow"><span>Que cambien solas como en el directo</span><input type="checkbox" id="pga"></label>
+<label class="fr"><span>📈 Probar cuánto se llenan</span><span class="pgn"><input type="range" id="sim" min="0" max="100" value="35" style="width:130px"><b id="siml">ejemplo</b><button id="simx" title="Volver a los datos de ejemplo">↺</button></span></label>
+</div>
 <p class="hint" id="pm">Haz clic una vez dentro de la ventana abierta para activar el sonido. Si usas la URL en OBS (Fuente → Navegador, 1920×1080) el fondo es transparente.</p></div></div></div></div>
 <div id="stg"><div id="box"><div id="in"></div></div></div>
 <script>
@@ -112,6 +119,11 @@ function giftPC(e){const g=CU.gifts.find(f=>f&&gnm(f.n)&&gnm(f.n)==gnm(e.x));if(
 const isO=x=>x&&typeof x=='object'&&!Array.isArray(x);
 function merge(a,b){if(!isO(b))return a;for(const k in b)a[k]=isO(a[k])&&isO(b[k])?merge(a[k],b[k]):b[k];return a}
 const enc=c=>btoa(unescape(encodeURIComponent(JSON.stringify(c)))),dec=s=>JSON.parse(decodeURIComponent(escape(atob(s))));
+/* ===== enlace fijo: la configuración viaja por ntfy (el mismo servicio de Ko-fi) ===== */
+const SYNC_HOST=window.__SYNC_HOST||'ntfy.sh',newCode=()=>'sayler-'+[...crypto.getRandomValues(new Uint8Array(12))].map(x=>(x%36).toString(36)).join('');
+const b64=u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)},unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+async function zipTxt(t){try{if(window.CompressionStream){const r=await new Response(new Blob([t]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer();return 'z'+b64(new Uint8Array(r))}}catch(_){}return 'p'+btoa(unescape(encodeURIComponent(t)))}
+async function unzipTxt(s){if(s[0]=='z')return await new Response(new Blob([unb64(s.slice(1))]).stream().pipeThrough(new DecompressionStream('deflate'))).text();return decodeURIComponent(escape(atob(s.slice(1))))}
 const SB={font:'Cormorant Garamond',it:1,tm:'gr',c1:'#f7f0ff',c2:'#f4b3d6',fx:'none',sp:3,bg:'#2b2150',bg2:'#5b4a8e',bgm:'grad',bga:160,bo:60,bl:14,rad:1.1,bw:1,bc:'#c9b6f2',bm:'solid',sh:14,an:'fade',bf:'gr',bcol:'#c9b6f2',bcol2:'#f4b3d6',idle:'none',orn:'',pt:'',ptn:8,lay:'bar',ics:1.1,icp:'l',icb:'none',ica:'none',rg:.55,rbg:0,rd:0,ls:0,up:0,ta:'l',ts:0,tsc:'#000000',vc:'#ffd9ec',tdl:'',tdr:'',ra:'none',cel:'🎉 ⭐ ✨ 💖 🦋',cfx:'none',bsh:0,bshape:1,btk:18,bseg:0,sy:'♥'};
 const S=o=>({...SB,...o});
 const PRE={
@@ -133,7 +145,7 @@ const PRE={
  retro:['🕹️ Retro pixel',S({font:'Press Start 2P',it:0,tm:'solid',c1:'#ffe600',c2:'#ff4d6d',fx:'flicker',sp:2,bgm:'solid',bg:'#000000',bo:90,bl:0,rad:0,bw:4,bc:'#ffe600',an:'zoom',bf:'st',bcol:'#ff4d6d',bcol2:'#ffe600',vc:'#ffe600',bshape:0})],
  limp:['⚪ Minimal',S({font:'Quicksand',it:0,tm:'solid',c1:'#ffffff',bgm:'solid',bg:'#000000',bo:45,bl:8,rad:.6,bw:0,sh:0,bf:'solid',bcol:'#ffffff',vc:'#ffffff'})]};
 const base=()=>({size:30,w:24,pos:'tl',vis:12,hid:6,wake:1,snd:1,pl:Object.keys(P),bh:1,pg:6,ox:0,oy:0,...PRE.luna[1]});
-const DEF=()=>({ep:0,key:'green',kc:'#00ff00',ver:2,cur:{n:'Monedas',ic:'🪙',iu:'',tk:1,gifts:[]},act:{metas:1,barra:0,cont:0,time:0,ev:0},sn:{on:1,vol:70,who:'metas',goal:{on:1,s:'tada'},tend:{on:1,s:'fanfarria'},gift:{on:1,s:'moneda',min:0},don:{on:1,s:'caja',min:0},bits:{on:1,s:'cristal',min:0},sub:{on:1,s:'arpa'},fol:{on:1,s:'magia'},sha:{on:0,s:'pop'},lik:{on:0,s:'pop'},cha:{on:0,s:'pop'}},c:{tik:{on:1,port:21213},tw:{on:0,ch:''},kf:{on:0,topic:''},rl:{on:0,ws:'',http:'',sec:10},rate:{usd:100,bits:1,sub:300,kofi:null,pat:null,tksub:null,twsub:null}},
+const DEF=()=>({ep:0,key:'green',kc:'#00ff00',ver:2,sync:{on:1,code:''},cur:{n:'Monedas',ic:'🪙',iu:'',tk:1,gifts:[]},act:{metas:1,barra:0,cont:0,time:0,ev:0},sn:{on:1,vol:70,who:'metas',goal:{on:1,s:'tada'},tend:{on:1,s:'fanfarria'},gift:{on:1,s:'moneda',min:0},don:{on:1,s:'caja',min:0},bits:{on:1,s:'cristal',min:0},sub:{on:1,s:'arpa'},fol:{on:1,s:'magia'},sha:{on:0,s:'pop'},lik:{on:0,s:'pop'},cha:{on:0,s:'pop'}},c:{tik:{on:1,port:21213},tw:{on:0,ch:''},kf:{on:0,topic:''},rl:{on:0,ws:'',http:'',sec:10},rate:{usd:100,bits:1,sub:300,kofi:null,pat:null,tksub:null,twsub:null}},
  g:{mode:'global',items:[{i:'🎤',n:'Cantar una canción',t:500,m:'coins',p:''},{i:'🥤',n:'Reto en vivo',t:1500,m:'coins',p:''},{i:'🎁',n:'Sorteo sorpresa',t:5000,m:'coins',p:''}]},
  o:{metas:{...base(),title:'✦ Metas del directo ✦',dn:'strike',val:'both'},
   barra:{...base(),w:34,bh:1.6,dn:'keep',val:'both',hid:0},
@@ -167,7 +179,7 @@ function playSnd(k,vol){const d=SNDS[k],a=actx();if(!d||!a)return;const t0=a.cur
 function overlay(){
  document.documentElement.className='ov';
  const box=$('#box'),inn=$('#in'),bc=new BroadcastChannel('ovl-sayler');
- let tmI,pgI,pgN=0,pgs,extend=()=>{},tcmd=()=>{},cfg,s,type,pv,st,SK,T1,T2,vis,tk=()=>{},rows=[],cs=[],lastC,lst,seen=new Set();
+ let tmI,pgI,pgN=0,pgs,extend=()=>{},tcmd=()=>{},cfg,s,type,pv,st,SK,T1,T2,vis,tk=()=>{},rows=[],cs=[],lastC,lst,seen=new Set(),SIM=null,pvAuto=0,sw=null,swT=0,pend=null,lastTxt='',lastV=0,SYN='',lastR=null;
  const save=()=>{if(!pv)try{localStorage[SK]=JSON.stringify(st)}catch(_){}};
  const sum=(m,pl)=>pl.reduce((a,p)=>a+((st.t[p]||{})[m]||0),0);
  const nf=(v,sh)=>sh&&v>=1e3?(v>=1e6?(v/1e6).toFixed(1)+'M':(v/1e3).toFixed(1)+'K'):(+(+v).toFixed(2)).toLocaleString('es-MX');
@@ -185,7 +197,7 @@ function overlay(){
  function anim(rev){box.style.animation='none';void box.offsetWidth;box.style.animation=`a-${s.an} .8s both${rev?' reverse':''}`}
  function show(){vis=1;anim();arm()}
  function hide(){vis=0;anim(1);T2=setTimeout(show,s.hid*1000)}
- function arm(){clearTimeout(T1);clearTimeout(T2);if(s.hid>0&&s.vis>0)T1=setTimeout(hide,s.vis*1000)}
+ function arm(){clearTimeout(T1);clearTimeout(T2);if(!pv&&s.hid>0&&s.vis>0)T1=setTimeout(hide,s.vis*1000)}
  function wake(){if(!s.wake||s.hid<=0)return;if(!vis){clearTimeout(T2);show()}else arm()}
  function burst(){const E=(s.cel||'🎉 ⭐ ✨ 💖').split(/\s+/);for(let i=0;i<26;i++){const d=el('i','cf',E[i%E.length]);d.style.cssText=`left:${40+Math.random()*20}%;top:${40+Math.random()*20}%;--x:${(Math.random()-.5)*700}px;--y:${(Math.random()-.8)*500}px`;$('#stg').append(d);setTimeout(()=>d.remove(),1700)}}
  function snd(k){if(pv)return;const z=cfg.sn,e=z[k||'goal'];if(z.on&&e&&e.on)playSnd(e.s,z.vol)}
@@ -193,13 +205,13 @@ function overlay(){
  const SAY={gift:e=>`regaló ${e.x||'un regalo'}${e.q>1?' x'+e.q:''} · +${nf(e.c!=null?e.c:giftPC(e))} ${cuI()}`,like:e=>`dio ${e.v} ❤️`,follow:()=>'te siguió',share:()=>'compartió el live',sub:()=>'se suscribió ⭐',chat:e=>': '+(e.x||''),donation:e=>`donó $${e.v}`,bits:e=>`envió ${e.v} bits`};
  const chk=()=>{box.style.display=lst&&!lst.children.length?'none':''};
  function addEv(e){if(!lst||!s.pl.includes(e.p))return;const r=el('div','r ei'),t=el('span','t');r.append(t);lst.prepend(r);setT(t,`${P[e.p][0]}${KI[e.k]} ${e.n} ${SAY[e.k](e)}`);
-  while(lst.children.length>s.n)lst.lastChild.remove();if(s.life>0)setTimeout(()=>{r.remove();chk()},s.life*1000);chk()}
+  while(lst.children.length>s.n)lst.lastChild.remove();if(s.life>0&&!pv)setTimeout(()=>{r.remove();chk()},s.life*1000);chk()}
  function ingest(e){if(!KI[e.k])return;if(!P[e.p])e.p='relay';e.v=+e.v||(e.k=='gift'||e.k=='like'||e.k=='bits'||e.k=='donation'?0:1);e.n=e.n||'alguien';
   const t=st.t[e.p]=st.t[e.p]||{},add=(m,v)=>t[m]=(t[m]||0)+v,r=cfg.c.rate;
   const cv=e.k=='gift'?giftPC(e):e.k=='donation'?e.v*(e.p=='kofi'?(r.kofi??r.usd):e.p=='patreon'?(r.pat??r.usd):r.usd):e.k=='bits'?e.v*r.bits:e.k=='sub'?e.v*(e.p=='twitch'?(r.twsub??r.sub):e.p=='tiktok'?(r.tksub??r.sub):r.sub):0;e.c=cv;
   ({gift:()=>add('coins',cv),like:()=>add('likes',e.v),follow:()=>add('follows',1),share:()=>add('shares',1),chat:()=>add('chats',1),
    sub:()=>{add('subs',e.v);add('coins',cv)},donation:()=>{add('usd',e.v);add('coins',cv)},bits:()=>add('coins',cv)})[e.k]();
-  if(type=='time'&&st.tm&&s.pl.includes(e.p)){const dc=cv,pr=e.k=='gift'?(e.p=='tiktok'?s.xtk:null):e.k=='sub'?(e.p=='twitch'?s.xtws:e.p=='tiktok'?s.xtks:null):e.k=='bits'?s.xbit:e.k=='donation'?(e.p=='kofi'?s.xkf:e.p=='patreon'?s.xpt:s.xusd):null,sec=(pr!=null?pr*(+e.v||0):dc/100*s.xc)+(e.k=='like'?e.v/100*s.xl:0)+(e.k=='follow'?+s.xf:0)+(e.k=='share'?+s.xs:0)+(e.k=='chat'?+s.xm:0);if(sec>0)extend(sec)}
+  if(type=='time'&&st.tm&&s.pl.includes(e.p)){const dc=cv,sp=v=>v!=null&&v!==''&&+v>0?+v:null,pr=e.k=='gift'?(e.p=='tiktok'?sp(s.xtk):null):e.k=='sub'?(e.p=='twitch'?sp(s.xtws):e.p=='tiktok'?sp(s.xtks):null):e.k=='bits'?sp(s.xbit):e.k=='donation'?sp(e.p=='kofi'?s.xkf:e.p=='patreon'?s.xpt:s.xusd):null,sec=(pr!=null?pr*(+e.v||0):dc/100*s.xc)+(e.k=='like'?e.v/100*s.xl:0)+(e.k=='follow'?+s.xf:0)+(e.k=='share'?+s.xs:0)+(e.k=='chat'?+s.xm:0);if(sec>0)extend(sec)}
   save();addEv(e);evSnd(e);wake();tk()}
  /* conexiones */
  function norm(o){if(!o||typeof o!='object')return;const id=o.id||o.message_id||o.kofi_transaction_id;if(id){if(seen.has(id))return;seen.add(id)}
@@ -209,7 +221,7 @@ function overlay(){
   ingest({p,k:KI[k]?k:'donation',n,v,x:o.text||o.message||o.comment})}
  const feed=t=>{let o;try{o=JSON.parse(t)}catch(_){return}(Array.isArray(o)?o:o.events||[o]).forEach(norm)};
  function onTik(m){let o;try{o=JSON.parse(m.data)}catch(_){return}const d=o.data||{},k=o.event,n=d.nickname||d.uniqueId,e=x=>ingest({p:'tiktok',n,...x});
-  if(k=='gift'){if(+d.giftType==1&&d.repeatEnd===false)return;e({k:'gift',v:d.diamondCount!=null?d.diamondCount*Math.max(1,+d.repeatCount||1):(+d.coins||+d.diamonds||0),q:Math.max(1,+d.repeatCount||1),x:d.giftName})}
+  if(k=='gift'){if(+d.giftType==1&&d.repeatEnd===false)return;{const rc=Math.max(1,+d.repeatCount||1),dv=+d.diamondCount;e({k:'gift',v:dv>0?dv*rc:(+d.coins||+d.diamonds||+d.diamond_count||0),q:rc,x:d.giftName})}}
   else if(k=='like')e({k:'like',v:Math.max(1,+d.likeCount||1)});
   else if(k=='comment'||k=='chat')e({k:'chat',x:d.comment||d.text});
   else if(k=='subscribe')e({k:'sub'});else if(k=='follow'||k=='share')e({k});
@@ -262,9 +274,10 @@ function overlay(){
     if(L=='sym'){sy=el('div','sy');for(let j=0;j<10;j++)sy.append(el('i','',s.sy||'♥'));bd.append(sy)}
     if(L=='ring')rg=el('div','rg');
     r.append(...[ic,bd,rg].filter(Boolean));inn.append(r);rows.push({r,nm,vl,fl,rg,sy})});
-   pgs=el('div','pgs');inn.append(pgs);pgN=0;if(type=='metas')pgI=setInterval(()=>{pgN++;layout(1)},Math.max(2,s.pg)*1000);
-   tk=f=>{const g=cfg.g,tot=sum('coins',s.pl);let cum=0;
-    const R=g.items.map(it=>{const need=Math.max(1,it.t);let v;if(g.mode=='global'){v=Math.max(0,Math.min(need,tot-cum));cum+=need}else v=Math.min(need,sum(it.m,it.p?[it.p]:s.pl));v=Math.max(0,Math.min(need,v+(+it.add||0)));return{v,need,done:v>=need}});
+   pgs=el('div','pgs');inn.append(pgs);pgN=0;if(type=='metas')pgI=setInterval(()=>{if(pv&&!pvAuto)return;pgN++;layout(1)},Math.max(2,s.pg)*1000);
+   tk=f=>{const g=cfg.g,SM=pv&&SIM!=null;let pool=sum('coins',s.pl);if(SM)pool=Math.round(SIM*g.items.reduce((a,it)=>a+Math.max(1,+it.t||1),0));
+    const R=g.items.map(it=>{const need=Math.max(1,it.t),ad=SM?0:(+it.add||0);let v;if(g.mode=='global'){const m=Math.max(0,Math.min(need,ad)),fl=Math.min(need-m,pool);pool-=fl;v=m+fl+(ad<0?ad:0)}else v=SM?Math.round(SIM*need):Math.min(need,sum(it.m,it.p?[it.p]:s.pl))+ad;v=Math.max(0,Math.min(need,v));return{v,need,done:v>=need}});
+    lastR=R.map(r=>[r.v,r.need]);sendProg();
     let cur=R.findIndex((r,i)=>!r.done&&!g.items[i].off);if(cur<0)cur=R.length-1;
     R.forEach((r,i)=>{const w=rows[i],it=g.items[i];if(!w)return;const u=g.mode=='global'||it.m=='coins'?cuI():M[it.m][0],p=Math.floor(r.v/r.need*100);
      if(w.fl){w.fl.style.width=r.v/r.need*100+'%';w.fl.style.background=s.bf=='tl'?`hsl(${120*r.v/r.need} 85% 50%)`:''}
@@ -279,10 +292,10 @@ function layout(anim){const cand=rows.filter(w=>!w.hid);rows.forEach(w=>w.r.styl
   if(type!='metas'||!pgs)return;
   const z=s.size,cap=1000,tt=$('.tt',inn),avail=cap-(1.6*z+2*s.bw)-(tt?tt.offsetHeight+.4*z:0)-1.5*z,pages=[[]];let used=0;
   cand.forEach(w=>{const h=w.r.offsetHeight+.55*z,last=pages[pages.length-1];if(last.length&&used+h>avail){pages.push([]);used=0}pages[pages.length-1].push(w);used+=h});
-  pgN%=pages.length;cand.forEach(w=>{const on=pages[pgN].includes(w);w.r.style.display=on?'':'none';if(on&&anim&&pages.length>1){w.r.classList.remove('pf');void w.r.offsetWidth;w.r.classList.add('pf')}});
+  pgN=((pgN%pages.length)+pages.length)%pages.length;if(pv&&parent!==window)try{parent.postMessage({t:'pgs',type,n:pages.length,cur:pgN},'*')}catch(_){}cand.forEach(w=>{const on=pages[pgN].includes(w);w.r.style.display=on?'':'none';if(on&&anim&&pages.length>1){w.r.classList.remove('pf');void w.r.offsetWidth;w.r.classList.add('pf')}});
   pgs.textContent=pages.length>1?pages.map((_,i)=>i==pgN?'●':'○').join(' '):''}
  function apply(){setCur(cfg.cur);if(!cfg.o[type])return;s=cfg.o[type];
-  if(st.ep!==cfg.ep){st.t={};st.tm=null;st.ep=cfg.ep;save()}
+  if(!(st.ep>=cfg.ep)){st.t={};st.tm=null;st.ep=cfg.ep;save()}
   const b=$('#stg').style;b.alignItems={t:'flex-start',m:'center',b:'flex-end'}[s.pos[0]];b.justifyContent={l:'flex-start',c:'center',r:'flex-end'}[s.pos[1]];box.style.position='relative';box.style.left=(s.ox||0)+'px';box.style.top=(s.oy||0)+'px';
   const g2=s.bgm=='none'?'transparent':s.bgm=='grad'?`linear-gradient(${s.bga}deg,color-mix(in srgb,${s.bg} ${s.bo}%,transparent),color-mix(in srgb,${s.bg2} ${s.bo}%,transparent))`:`color-mix(in srgb,${s.bg} ${s.bo}%,transparent)`;
   inn.style.cssText=`font:700 ${s.size}px/1.25 "${s.font}",sans-serif;width:${s.w}em;background:${g2};border-radius:${s.rad}em;border:${s.bw}px solid ${s.bc};box-shadow:0 0 ${s.sh}px ${s.bc};backdrop-filter:blur(${s.bl||0}px);text-align:${{l:'left',c:'center',r:'right'}[s.ta]||'left'};letter-spacing:${s.ls}px;${s.up?'text-transform:uppercase;':''}${s.ts?`text-shadow:0 0 ${s.ts}px ${s.tsc};`:''}--c1:${s.c1};--c2:${s.c2};--sp:${s.sp}s;--bc:${s.bcol};--bc2:${s.bcol2};--bh:${s.bh};--ics:${s.ics};--brd:${s.bshape};--btk:${s.btk};--n:${s.bseg||1};--rbg:${s.rbg};--rg:${s.rg};--orn:${JSON.stringify(s.orn||'')}`;
@@ -290,13 +303,22 @@ function layout(anim){const cand=rows.filter(w=>!w.hid);rows.forEach(w=>w.r.styl
   inn.className=`m-${gl?'solid':s.tm} f-${gl?'none':s.fx} b-${s.bf}${s.bm=='rb'?' rbb':''}${s.it?' it':''} i-${s.idle} ip-${s.icp} ib-${s.icb} ia-${s.ica} lay-${s.lay}${s.bsh?' bshn':''}${s.bseg>0?' sg':''}${s.orn?' o-on':''}`;
   build();particles();tk(1);clearTimeout(T1);clearTimeout(T2);show();
   const c=JSON.stringify(cfg.c);if(c!=lastC){lastC=c;conn()}}
- function boot(){fit();const q=new URLSearchParams(location.hash.slice(1));type=q.get('o');pv=q.get('p');document.body.style.background=q.get('k')?'#'+q.get('k'):'';cfg=DEF();try{merge(cfg,dec(q.get('c')))}catch(_){try{const sv=JSON.parse(localStorage.ovlS);merge(cfg,sv);if(!sv.ver)cfg.o=DEF().o}catch(_){}}
+ function sendProg(){if(!pv&&lastR&&(type=='metas'||type=='barra'))try{bc.postMessage({t:'prog',type,R:lastR})}catch(_){}}
+ function syncOpen(){clearTimeout(swT);if(sw){sw.onclose=null;try{sw.close()}catch(_){}sw=null}if(!SYN)return;lastTxt=localStorage.ovlC||'';lastV=+localStorage.ovlCv||0;
+  const go=()=>{if(!SYN)return;let w;try{w=new WebSocket('wss://'+SYNC_HOST+'/'+encodeURIComponent(SYN)+'/ws?since=12h')}catch(_){swT=setTimeout(go,5000);return}sw=w;w.onmessage=onSync;w.onclose=()=>{if(sw===w)swT=setTimeout(go,4000)}};go()}
+ const SG={};
+ function onSync(m){let o,x;try{o=JSON.parse(m.data);if(o.event!='message')return;x=JSON.parse(o.message)}catch(_){return}
+  if(!x||!x.cv||!(x.n>0))return;const g=SG[x.cv]=SG[x.cv]||{n:x.n,p:{}};g.p[x.i]=x.d;
+  if(Object.keys(g.p).length<g.n||x.cv<=lastV||(pend&&x.cv<=pend.cv))return;
+  const mine=pend={cv:x.cv,s:Array.from({length:g.n},(_,i)=>g.p[i]).join('')};
+  setTimeout(()=>{if(pend!==mine)return;unzipTxt(mine.s).then(t=>{const j=JSON.parse(t);lastV=mine.cv;if(t===lastTxt)return;lastTxt=t;try{localStorage.ovlC=t;localStorage.ovlCv=String(lastV)}catch(_){}cfg=merge(DEF(),j);apply()}).catch(()=>{})},500)}
+ function boot(){fit();const q=new URLSearchParams(location.hash.slice(1));type=q.get('o');pv=q.get('p');SYN=pv?'':(q.get('s')||'');document.body.style.background=q.get('k')?'#'+q.get('k'):'';cfg=DEF();try{merge(cfg,dec(q.get('c')))}catch(_){try{const sv=JSON.parse(SYN&&localStorage.ovlC?localStorage.ovlC:localStorage.ovlS);merge(cfg,sv);if(!sv.ver)cfg.o=DEF().o}catch(_){}}
   SK='ovl-st-'+type;st=null;
   if(pv)st={ep:cfg.ep,t:{tiktok:{coins:340,likes:120,follows:8,subs:1,chats:40},kofi:{usd:3,coins:300},twitch:{chats:20}}};
   else try{st=JSON.parse(localStorage[SK])}catch(_){}
-  if(!st)st={t:{},ep:cfg.ep};lastC='';apply()}
- const rx=m=>{const d=m.data||{};if(d.t=='cfg'){cfg=merge(DEF(),d.cfg);apply()}else if(d.t=='ev')ingest({...d.e});else if(d.t=='tcmd'&&type=='time')tcmd(d)};
- bc.onmessage=rx;addEventListener('message',rx);addEventListener('resize',()=>{fit();tk(1)});addEventListener('hashchange',boot);boot();
+  if(!st)st={t:{},ep:cfg.ep};lastC='';apply();syncOpen()}
+ const rx=m=>{const d=m.data||{};if(d.t=='cfg'){cfg=merge(DEF(),d.cfg);apply()}else if(d.t=='ev')ingest({...d.e});else if(d.t=='tcmd'&&type=='time')tcmd(d);else if(d.t=='sim'&&pv){SIM=d.f;tk(1)}else if(d.t=='pg'&&pv&&type=='metas'){pgN+=d.d||0;layout(1)}else if(d.t=='pgauto'){pvAuto=d.on?1:0}};
+ bc.onmessage=rx;addEventListener('message',rx);setInterval(sendProg,3000);addEventListener('pagehide',()=>{try{save()}catch(_){}});document.addEventListener('visibilitychange',()=>{if(document.hidden)try{save()}catch(_){}});addEventListener('resize',()=>{fit();tk(1)});addEventListener('hashchange',boot);boot();
 }
 
 /* ============ PANEL DE CONTROL ============ */
@@ -305,14 +327,29 @@ function control(){const BGIMG='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABA
  let cfg=DEF();try{const sv=JSON.parse(localStorage.ovlS);merge(cfg,sv);if(!sv.ver)cfg.o=DEF().o}catch(_){}
  setCur(cfg.cur);
  const T={k:'gift',p:'tiktok',n:'Ana',v:100,x:'Rose'},pv=$('#pv');
- const link=(t,p,k)=>location.href.split('#')[0]+'#o='+t+(p?'&p=1':'')+(k?'&k='+k:'')+'&c='+encodeURIComponent(enc({...cfg,o:{[t]:cfg.o[t]}}));
- const updUrl=()=>{if(OVT.includes(pvT))$('#url').value=link(pvT)};
- function ch(re){setCur(cfg.cur);curTab();try{localStorage.ovlS=JSON.stringify(cfg)}catch(_){}clearTimeout(tm);tm=setTimeout(()=>{send({t:'cfg',cfg});updUrl()},120);if(re)view()}
+ const syncOn=()=>!!(cfg.sync&&cfg.sync.on&&cfg.sync.code),link=(t,p,k,fx)=>location.href.split('#')[0]+'#o='+t+(p?'&p=1':'')+(k?'&k='+k:'')+(fx&&syncOn()?'&s='+encodeURIComponent(cfg.sync.code):'&c='+encodeURIComponent(enc({...cfg,o:{[t]:cfg.o[t]}})));
+ const updUrl=()=>{if(OVT.includes(pvT))$('#url').value=link(pvT,0,'',1)};
+ if(cfg.sync.on&&!cfg.sync.code){cfg.sync.code=newCode();try{localStorage.ovlS=JSON.stringify(cfg)}catch(_){}}
+ const synMsg=t=>{const e=$('#syn');if(e)e.textContent=t};let pubT=0,lastPub='',pubBusy=0;
+ const pubTxt=()=>{const o={...cfg};delete o.sync;return JSON.stringify(o)};
+ function pubSoon(now){if(!syncOn())return;clearTimeout(pubT);pubT=setTimeout(()=>pubNow(),now?250:2500)}
+ async function pubNow(force){if(!syncOn()||pubBusy)return;const txt=pubTxt();if(txt===lastPub&&!force)return;pubBusy=1;let ok=0;
+  try{const z=await zipTxt(txt),cv=Date.now(),SZ=2800,n=Math.ceil(z.length/SZ);
+   for(let i=0;i<n;i++){const r=await fetch('https://'+SYNC_HOST+'/'+encodeURIComponent(cfg.sync.code),{method:'POST',body:JSON.stringify({cv,i,n,d:z.slice(i*SZ,(i+1)*SZ)})});if(!r.ok)throw 0}
+   lastPub=txt;ok=1;synMsg('✔ Enlace al día · '+new Date().toLocaleTimeString())}catch(_){synMsg('⚠ No pude actualizar el enlace (¿sin internet?). Lo intento otra vez en un momento.');pubT=setTimeout(()=>pubNow(),30000)}
+  pubBusy=0;if(ok&&pubTxt()!==lastPub)pubSoon()}
+ const nf2=v=>(+(+v).toFixed(2)).toLocaleString('es-MX');let PROG=null;
+ function progShow(R){PROG=R;R.forEach((x,i)=>{const e=$('#gp'+i);if(e)e.textContent='En el directo lleva '+nf2(x[0])+' / '+nf2(x[1])})}
+ bc.onmessage=m=>{const d=m.data;if(d&&d.t=='prog'&&Array.isArray(d.R))progShow(d.R)};
+ const toPv=m=>{[$('#pv'),...document.querySelectorAll('#pvw iframe.sx')].forEach(f=>{try{f.contentWindow.postMessage(m,'*')}catch(_){}})};
+ let SIMV=null,PGA=0;const pvSync=()=>{toPv({t:'pgauto',on:PGA});if(SIMV!=null)toPv({t:'sim',f:SIMV/100})};
+ addEventListener('message',e=>{const d=e.data;if(d&&d.t=='pgs'&&d.type=='metas'){$('#pgl').textContent=(d.cur+1)+'/'+d.n}});
+ function ch(re){setCur(cfg.cur);curTab();try{localStorage.ovlS=JSON.stringify(cfg);localStorage.__edited=String(Date.now())}catch(_){}clearTimeout(tm);tm=setTimeout(()=>{send({t:'cfg',cfg});updUrl()},120);pubSoon();if(re)view()}
  function inp(o,k,t,x,re){let i;if(t=='emo'){const w=el('span','emo'),i=inp(o,k,'text',x,re),b=el('button','','😀'),mu=k=='pt'||k=='cel';b.onclick=e=>{e.stopPropagation();pickEmoji(b,c=>{i.value=mu?(i.value+' '+c).trim():c;i.dispatchEvent(new Event('input'))},mu)};w.append(i,b);return w}
   if(t=='sel')i=el('select','',x.map(a=>`<option value="${a[0]}">${a[1]}</option>`).join(''));
   else{i=el('input');i.type={text:'text',num:'number',color:'color',chk:'checkbox'}[t];if(t=='num'){i.min=x[0];i.max=x[1];i.step=x[2]||1}}
   if(t=='chk')i.checked=!!o[k];else i.value=o[k];
-  i.oninput=()=>{o[k]=t=='chk'?i.checked:t=='num'?+i.value:i.value;ch(re)};return i}
+  i.oninput=()=>{o[k]=t=='chk'?i.checked:t=='num'?(i.value===''&&/^x(tk|tks|tws|bit|kf|pt|usd)$/.test(k)?null:+i.value):i.value;ch(re)};return i}
  const fld=(o,k,l,t,x,re)=>{const w=el('label','fr','<span>'+l+'</span>');w.append(inp(o,k,t,x,re));return w};
  const grp=(t,fs,o,open)=>{const d=el('details','pn','<summary>'+t+'</summary>');d.open=!!open;fs.forEach(f=>d.append(fld(f[4]||o,f[0],f[1],f[2],f[3])));return d};
  const FONTS=['Quicksand','Bangers','Lilita One','Press Start 2P','Pacifico','Orbitron','Fredoka','Righteous','Cormorant Garamond','Arial Black','Impact'].map(f=>[f,f]);
@@ -335,22 +372,27 @@ const GTXT=[['ls','Separación de letras (px)','num',[-3,20,.5]],['up','MAYÚSCU
 const ICO=[['icp','Posición del icono','sel',[['l','Izquierda'],['r','Derecha'],['t','Arriba'],['n','Sin iconos']]],['ics','Tamaño del icono','num',[.5,4,.1]],['icb','Fondo del icono','sel',[['none','Ninguno'],['circle','Círculo'],['glow','Brillo']]],['ica','Animación del icono','sel',[['none','Ninguna'],['float','Flotar'],['bounce','Rebote'],['pulse','Latido'],['swing','Balanceo'],['spin','Giro']]]];
 const DONE=[['ra','Entrada de cada meta','sel',[['none','Ninguna'],['fade','Aparecer'],['slide','Deslizar'],['up','Subir'],['zoom','Zoom'],['flip','Giro 3D'],['bounce','Rebote']]],['cel','Emojis al cumplir una meta','emo'],['cfx','Efecto en la meta cumplida','sel',[['none','Ninguno'],['flash','Destello'],['shake','Sacudida'],['jelly','Gelatina']]]];
 const DECO=[['bgm','Fondo de la caja','sel',[['solid','Color liso'],['grad','Degradado'],['none','Sin fondo']]],['bg2','Color 2 del degradado','color'],['bga','Ángulo del degradado','num',[0,360]],['sh','Resplandor del borde (px)','num',[0,80]],['orn','Adorno en las esquinas','emo'],['pt','Partículas flotantes','emo'],['ptn','Cantidad de partículas','num',[1,30]],['idle','Movimiento de la caja','sel',[['none','Quieta'],['float','Flotar'],['breathe','Respirar'],['glowp','Brillo pulsante'],['sway','Balanceo']]]];
-const MORE=[['sub','Texto pequeño debajo','text',0],['iu','Imagen como icono (URL)','text',0],['col','Color propio del texto (ej. #ff77aa)','text',0],['b1','Color propio de la barra 1','text',0],['b2','Color propio de la barra 2','text',0],['add','Sumar progreso a mano','num',[-1e9,1e9]],['dn2','Texto al cumplirse','text',0],['off','Ocultar esta meta','chk',0]];
+const MORE=[['sub','Texto pequeño debajo','text',0],['iu','Imagen como icono (URL)','text',0],['col','Color propio del texto (ej. #ff77aa)','text',0],['b1','Color propio de la barra 1','text',0],['b2','Color propio de la barra 2','text',0],['dn2','Texto al cumplirse','text',0],['off','Ocultar esta meta','chk',0]];
 const EXTRA={metas:['🎯 Lista de metas: aspecto',[['title','Título (vacío = sin título)','text'],...LAY]],barra:['📊 Barra: aspecto',LAY],
   cont:['🔢 Contador',[['label','Texto superior','text'],['ic','Icono / prefijo (vacío = el icono de tu moneda)','text'],['m','Qué contar','sel',opt(M)],['off','Sumar cantidad inicial','num',[-1e9,1e9]],['fmt','Formato','sel',[['full','1,234'],['short','1.2K']]],['cu','Contar subiendo (animado)','chk'],['bk','Mostrar desglose por plataforma','chk']]],
-  time:['⏳ Temporizador extensible',[['label','Texto superior','text'],['min','Tiempo inicial (min)','num',[.1,1440,.1]],['run','▶ Corriendo','chk'],['bar','Barra debajo (verde → amarillo → rojo)','chk'],['cap','Barra llena = (min)','num',[.1,1440,.1]],['mx','Tope máximo (min, 0 = sin tope)','num',[0,1440]],['end','Texto al terminar','text'],['xc','Segundos por cada 100 monedas (general, si no pones valor propio abajo)','num',[0,1e5,.5]],['xtk','🎵 Segundos por cada moneda de TikTok','num',[0,1e5,.01]],['xtks','🎵 Segundos por suscripción de TikTok','num',[0,1e5,.5]],['xtws','💜 Segundos por suscripción de Twitch','num',[0,1e5,.5]],['xbit','💜 Segundos por cada bit de Twitch','num',[0,1e5,.01]],['xkf','☕ Segundos por cada $1 de Ko-fi','num',[0,1e5,.5]],['xpt','🧡 Segundos por cada $1 de Patreon','num',[0,1e5,.5]],['xusd','🔌 Segundos por cada $1 de otras (relay)','num',[0,1e5,.5]],['xl','Segundos por cada 100 likes','num',[0,1e5,.5]],['xf','Segundos por seguidor','num',[0,1e5,.5]],['xs','Segundos por compartir','num',[0,1e5,.5]],['xm','Segundos por comentario','num',[0,1e5,.5]]]],
+  time:['⏳ Temporizador extensible',[['label','Texto superior','text'],['min','Tiempo inicial (min)','num',[.1,1440,.1]],['run','▶ Corriendo','chk'],['bar','Barra debajo (verde → amarillo → rojo)','chk'],['cap','Barra llena = (min)','num',[.1,1440,.1]],['mx','Tope máximo (min, 0 = sin tope)','num',[0,1440]],['end','Texto al terminar','text'],['xc','Segundos por cada 100 monedas (general: se usa cuando el campo propio de abajo está vacío o en 0)','num',[0,1e5,.5]],['xtk','🎵 Segundos por cada moneda de TikTok','num',[0,1e5,.01]],['xtks','🎵 Segundos por suscripción de TikTok','num',[0,1e5,.5]],['xtws','💜 Segundos por suscripción de Twitch','num',[0,1e5,.5]],['xbit','💜 Segundos por cada bit de Twitch','num',[0,1e5,.01]],['xkf','☕ Segundos por cada $1 de Ko-fi','num',[0,1e5,.5]],['xpt','🧡 Segundos por cada $1 de Patreon','num',[0,1e5,.5]],['xusd','🔌 Segundos por cada $1 de otras (relay)','num',[0,1e5,.5]],['xl','Segundos por cada 100 likes','num',[0,1e5,.5]],['xf','Segundos por seguidor','num',[0,1e5,.5]],['xs','Segundos por compartir','num',[0,1e5,.5]],['xm','Segundos por comentario','num',[0,1e5,.5]]]],
   ev:['💬 Últimos eventos',[['n','Eventos visibles','num',[1,15]],['life','Segundos antes de borrarse (0 = nunca)','num',[0,600]]]]};
  function plsUI(o){const d=el('details','pn','<summary>📡 Plataformas que cuentan</summary>');d.open=1;
   d.append(el('p','hint','Elige una o todas: el contador y las metas suman solo lo de las plataformas marcadas.'));
   const w=el('div');w.style.cssText='display:flex;flex-wrap:wrap;gap:12px';
   for(const p in P){const l=el('label','','<input type=checkbox> '+P[p][0]+' '+P[p][1]),i=l.firstChild;i.checked=o.pl.includes(p);i.oninput=()=>{o.pl=o.pl.filter(x=>x!=p);if(i.checked)o.pl.push(p);ch()};w.append(l)}
   d.append(w);return d}
+ function manRow(it,i){const r=el('div','gr mn'),sp=el('span','','✋ A mano'),ai=inp(it,'add','num',[-1e9,1e9]),pg=el('span','hint'),
+   Q=(t,n)=>{const b=el('button','',t);b.onclick=()=>{it.add=Math.round(((+it.add||0)+n)*100)/100;ai.value=it.add;ch()};return b},z=el('button','','0');
+  ai.title='Progreso que ya tiene esta meta. Se guarda con tu configuración y no se borra al terminar el directo.';z.title='Quitar lo sumado a mano';z.onclick=()=>{it.add=0;ai.value=0;ch()};
+  pg.id='gp'+i;pg.style.cssText='flex-basis:100%;margin:0';if(PROG&&PROG[i])pg.textContent='En el directo lleva '+nf2(PROG[i][0])+' / '+nf2(PROG[i][1]);
+  r.append(sp,ai,Q('−100',-100),Q('+10',10),Q('+100',100),Q('+1000',1000),z,pg);return r}
  function goalsUI(){const g=cfg.g,d=el('details','pn','<summary>📝 Mi lista de metas</summary>');d.open=1;
   d.append(fld(g,'mode','Cómo se consiguen','sel',[['global','🌍 Globales (monedas)'],['ind','🎯 Individuales']],1));
-  d.append(el('p','hint',g.mode=='global'?'Todo (regalos, donaciones, bits, subs…) se convierte en monedas de tu página y llena las metas en orden. Pon cuánto cuesta cada una en esas monedas; cuánto vale cada cosa lo cambias en la pestaña 🪙 Mi moneda.':'Cada meta cuenta lo suyo: una con monedas, otra con likes, seguidores, dólares… y puedes limitarla a una plataforma.'));
+  d.append(el('p','hint',g.mode=='global'?'Todo (regalos, donaciones, bits, subs…) se convierte en monedas de tu página y llena las metas en orden. Pon cuánto cuesta cada una en esas monedas; cuánto vale cada cosa lo cambias en la pestaña 🪙 Mi moneda. En «✋ A mano» de cada meta puedes dejar el progreso que ya llevaba: cuenta como conseguido y las monedas nuevas llenan lo que falte.':'Cada meta cuenta lo suyo: una con monedas, otra con likes, seguidores, dólares… y puedes limitarla a una plataforma.'));
   g.items.forEach((it,i)=>{const r=el('div','gr'),ib=el('button','',it.iu?'🖼️':(it.i||'➕'));ib.title='Elegir emoji o icono';ib.onclick=e=>{e.stopPropagation();pickEmoji(ib,c=>{it.i=c;it.iu='';ch(1)})};r.append(ib,inp(it,'n','text'),inp(it,'t','num',[1,1e9]));
    if(g.mode=='ind')r.append(inp(it,'m','sel',opt(M)),inp(it,'p','sel',[['','Todas'],...opt(P)]));
-   const u=el('button','','↑'),x=el('button','','✕');u.onclick=()=>{if(i){[g.items[i-1],g.items[i]]=[g.items[i],g.items[i-1]];ch(1)}};x.onclick=()=>{g.items.splice(i,1);ch(1)};r.append(u,x);d.append(r,grp('⚙ Más opciones de esta meta',MORE.map(f=>[...f,it]),0))});
+   const u=el('button','','↑'),x=el('button','','✕');u.onclick=()=>{if(i){[g.items[i-1],g.items[i]]=[g.items[i],g.items[i-1]];ch(1)}};x.onclick=()=>{g.items.splice(i,1);ch(1)};r.append(u,x);d.append(r,manRow(it,i),grp('⚙ Más opciones de esta meta',MORE.map(f=>[...f,it]),0))});
   const a=el('button','','➕ Agregar meta');a.onclick=()=>{g.items.push({i:'⭐',n:'Nueva meta',t:100,m:'coins',p:''});ch(1)};d.append(a);return d}
  let tw,tt;const seenG={};
  function tikSt(x,ok){const a=$('#tks'),b=$('#tkd');if(a)a.textContent=x;if(b)b.style.color=ok?'#5dff9a':'#ff7a7a'}
@@ -380,12 +422,12 @@ const EXTRA={metas:['🎯 Lista de metas: aspecto',[['title','Título (vacío = 
   b.onclick=()=>send({t:'ev',e:{...T}});
   a.onclick=()=>{let i=0;const KP={gift:['tiktok'],like:['tiktok'],follow:['tiktok'],chat:['tiktok','twitch'],sub:['twitch','tiktok'],donation:['kofi','patreon'],bits:['twitch']},ks=Object.keys(KP),rd=a=>a[Math.random()*a.length|0];
    const iv=setInterval(()=>{const k=rd(ks);send({t:'ev',e:{k,p:rd(KP[k]),n:rd(['Ana','Leo','Mia','Kai','Zoe']),v:k=='gift'?rd([1,5,10,30,99,500]):k=='like'?1+Math.random()*30|0:k=='donation'?rd([3,5,10]):k=='bits'?rd([100,500]):1,x:'Rose'}});if(++i>=20)clearInterval(iv)},400)};
-  r.onclick=()=>{cfg.ep++;ch()};g.append(el('div','bar2','')); $('.bar2',g).append(b,a,r);
+  r.onclick=()=>{if(!confirm('¿Reiniciar los contadores y el temporizador a cero? Se pierde el progreso guardado de los overlays (lo «A mano» de cada meta se queda).'))return;cfg.ep++;ch()};g.append(el('div','bar2','')); $('.bar2',g).append(b,a,r);
   g.append(el('p','hint','Los eventos de prueba llegan a la vista previa y a las ventanas abiertas en este navegador. Para reiniciar un overlay de OBS, vuelve a copiar su URL después de reiniciar.'));d.append(g);return d}
  function presetUI(o){const d=el('details','pn','<summary>🎨 Diseños predeterminados</summary>'),w=el('div','chips');d.open=1;let last;
   Object.entries(PRE).forEach(([k,v])=>{const b=el('button','',v[0]);b.onclick=()=>{last=v[1];Object.assign(o,v[1]);ch(1)};w.append(b)});
   const a=el('button','','🎨 Aplicar el último diseño a todos los overlays');a.onclick=()=>{if(last)OVT.forEach(t=>Object.assign(cfg.o[t],last));ch(1)};d.append(w,el('p','hint','Elige uno y luego ajusta todo lo que quieras abajo.'),a);return d}
- function timeNote(){const d=el('div','pn','<p class="hint" style="margin-top:0">⏳ Cuenta atrás extensible: cada regalo, like, seguidor, etc. suma tiempo (configúralo abajo) y la barra pasa de verde a amarillo y a rojo mientras se gasta. Para pausarla desmarca "Corriendo" y vuelve a copiar la URL.</p>'),b=el('button','','♻ Reiniciar (temporizador y contadores)');b.onclick=()=>{cfg.ep++;ch()};d.append(b);return d}
+ function timeNote(){const d=el('div','pn','<p class="hint" style="margin-top:0">⏳ Cuenta atrás extensible: cada regalo, like, seguidor, etc. suma tiempo (configúralo abajo) y la barra pasa de verde a amarillo y a rojo mientras se gasta. Para pausarla desmarca "Corriendo" y vuelve a copiar la URL.</p>'),b=el('button','','♻ Reiniciar (temporizador y contadores)');b.onclick=()=>{if(!confirm('¿Reiniciar los contadores y el temporizador a cero? Se pierde el progreso guardado de los overlays.'))return;cfg.ep++;ch()};d.append(b);return d}
  function kofiUI(){const c=cfg.c.kf,d=grp('☕🧡 Ko-fi y Patreon (fácil, sin instalar nada)',[['on','Activar','chk',0,c]],0,1),u=el('input');u.readOnly=1;
   const set=()=>u.value=c.topic?'https://ntfy.sh/'+c.topic:'',ti=inp(c,'topic','text'),g=el('button','','🎲 Generar'),cp=el('button','','📋'),ts=el('button','','🧪 Probar'),r=el('div','bar2'),r2=el('div','bar2');
   ti.placeholder='tu código secreto';ti.addEventListener('input',set);set();
@@ -398,7 +440,7 @@ const EXTRA={metas:['🎯 Lista de metas: aspecto',[['title','Título (vacío = 
  function fillSel(x){if(!x)return;const p=PF();x.innerHTML='<option value="">— sin perfil —</option>'+p.l.map(q=>`<option value="${q.id}">${q.n.replace(/</g,'&lt;')}</option>`).join('');x.value=p.cur||''}
  function refQ(){fillSel($('#qp'));fillSel($('#pSel'))}
  function loadP(id){const p=PF(),q=p.l.find(x=>x.id==id);p.cur=q?q.id:'';svPF(p);if(!q)return refQ();const d=JSON.parse(JSON.stringify(q.d));cfg.o=merge(DEF().o,d.o||{});cfg.g=d.g||cfg.g;cfg.sn=merge(DEF().sn,d.sn||{});cfg.act=merge(DEF().act,d.act||{});if(d.cur)cfg.cur=merge(DEF().cur,d.cur);if(rst)cfg.ep++;pvT='';ch();view();scene();refQ()}
- function scene(){const sc=$('#pvm').value=='all',w=$('#pvw');w.querySelectorAll('iframe.sx').forEach(x=>x.remove());$('#pv').style.display=sc?'none':'';if(!sc)return;OVT.filter(t=>cfg.act[t]).forEach(t=>{const fr=el('iframe','sx');fr.src=link(t,1);w.append(fr)})}
+ function scene(){const sc=$('#pvm').value=='all',w=$('#pvw');w.querySelectorAll('iframe.sx').forEach(x=>x.remove());$('#pv').style.display=sc?'none':'';if(!sc)return;OVT.filter(t=>cfg.act[t]).forEach(t=>{const fr=el('iframe','sx');fr.onload=pvSync;fr.src=link(t,1);w.append(fr)})}
  function fxUI(o){const d=grp('✨ Fondo, adornos y partículas',DECO,o,1),w=el('div','chips');w.style.margin='8px 0';
   [['🚫 Sin partículas',''],['🦋 Mariposas','🦋 🦋 ✨'],['✨ Estrellitas','✨ ⭐ 🌟'],['💖 Corazones','💖 💗 💜'],['🌸 Pétalos','🌸 🌷'],['❄️ Copos','❄️ ✨'],['☁️ Nubes','☁️'],['🔥 Chispas','✨ 🔥']].forEach(([l,v])=>{const b=el('button','',l);b.onclick=()=>{o.pt=v;ch(1)};w.append(b)});
   const q=el('button','','🚫 Quitar todos los efectos (partículas, adornos, movimiento, brillos y animaciones)');q.onclick=()=>{Object.assign(o,{pt:'',orn:'',idle:'none',bsh:0,ica:'none',ra:'none',cfx:'none',fx:'none',sh:0});ch(1)};
@@ -449,7 +491,7 @@ const EXTRA={metas:['🎯 Lista de metas: aspecto',[['title','Título (vacío = 
   const B=(t,f)=>{const b=el('button','',t);b.onclick=f;return b},tot=()=>(+mm.value||0)*60+(+ss.value||0),bar=el('div','chips'),q=el('div','chips');
   bar.append(B('➕ Sumar',()=>tcSend('add',tot())),B('➖ Restar',()=>tcSend('add',-tot())),B('⏸ Pausar',()=>tcSend('pause')),B('▶ Reanudar',()=>tcSend('resume')),B('↺ Reiniciar',()=>tcSend('reset')));
   [30,60,300,600].forEach(x=>q.append(B('+'+(x>=60?x/60+' min':x+' s'),()=>tcSend('add',x))));d.append(bar,q);return d}
- function view(){const e=$('#ed');e.innerHTML='';
+ function view(){const e=$('#ed');e.innerHTML='';$('#pvx').hidden=!(tab=='metas'||tab=='barra');$('#pgrow').hidden=$('#pgarow').hidden=tab!='metas';
   if(OVT.includes(tab)){const o=cfg.o[tab];
    const ac=el('div','pn'),af=fld(cfg.act,tab,'✔ Usar este overlay en mi directo','chk');af.querySelector('input').addEventListener('input',scene);ac.append(af,el('p','hint','Cada overlay es una ventana (o fuente de OBS) aparte, así acomodas metas, temporizador, etc. por separado. Su lugar se ajusta en «Caja, borde y posición». Los activos se abren juntos con «Abrir los activos» y se ven juntos en la escena.'));e.append(ac,presetUI(o));if(tab=='time')e.append(timeNote());if(tab=='metas')e.append(goalsUI());if(tab=='barra')e.append(el('p','hint pn','📊 Muestra solo la meta en curso, usando la lista de la pestaña 🎯 Metas.'));
    e.append(...(tab=='time'?[tctlUI()]:[]),grp(EXTRA[tab][0],EXTRA[tab][1].map(f=>f[0]=='m'?[f[0],f[1],'sel',opt(M)]:f),o,1),grp('🔤 Texto y efectos',TXT,o),grp('📦 Caja, borde y posición',BOX,o),...(tab=='metas'||tab=='barra'?[grp('📊 Barra y valores',BAR2,o),grp('🔤 Texto de las metas',GTXT,o),grp('🖼 Iconos de las metas',ICO,o),grp('🏁 Entrada y metas cumplidas',DONE,o)]:[]),fxUI(o),grp('🎬 Animación y apariciones',ANIM,o),plsUI(o));
@@ -462,7 +504,10 @@ const EXTRA={metas:['🎯 Lista de metas: aspecto',[['title','Título (vacío = 
  $('#ks').onchange=e=>{cfg.key=e.target.value;ch();setKey()};$('#kc').oninput=e=>{cfg.kc=e.target.value;ch();setKey()};$('#pvb').onchange=setKey;setKey();
  $('#cp').onclick=()=>{const u=$('#url');u.select();try{navigator.clipboard.writeText(u.value)}catch(_){}document.execCommand('copy');$('#cp').textContent='✔ Copiado';setTimeout(()=>$('#cp').textContent='📋 Copiar URL para OBS',1200)};
  const pop=t=>{const w=window.open(link(t,0,keyHex()),'ov-'+t,'popup,width=960,height=540');if(w){pops[t]=w;$('#pm').textContent='Ventana abierta. Haz clic una vez dentro de ella para activar el sonido y captúrala en OBS con «Captura de ventana».'}else $('#pm').textContent='El navegador bloqueó la ventana. Permite las ventanas emergentes para esta página.'};$('#popx').onclick=()=>Object.values(pops).forEach(w=>{try{w.close()}catch(_){}});$('#pop').onclick=()=>pop(pvT||'metas');$('#popall').onclick=()=>OVT.filter(t=>cfg.act[t]).forEach((t,i)=>setTimeout(()=>pop(t),i*300));
- view();refQ();scene();$('#pvm').onchange=scene;$('#qp').onchange=()=>loadP($('#qp').value);
+ pv.onload=pvSync;$('#syc').checked=!!cfg.sync.on;$('#syc').onchange=e=>{cfg.sync.on=e.target.checked?1:0;if(cfg.sync.on&&!cfg.sync.code)cfg.sync.code=newCode();ch();updUrl();synMsg('');if(cfg.sync.on)pubSoon(1)};
+ $('#pgp').onclick=()=>toPv({t:'pg',d:-1});$('#pgn').onclick=()=>toPv({t:'pg',d:1});$('#pga').onchange=e=>{PGA=e.target.checked?1:0;toPv({t:'pgauto',on:PGA})};
+ $('#sim').oninput=e=>{SIMV=+e.target.value;$('#siml').textContent=SIMV+'%';toPv({t:'sim',f:SIMV/100})};$('#simx').onclick=()=>{SIMV=null;$('#siml').textContent='ejemplo';toPv({t:'sim',f:null})};
+ view();refQ();scene();$('#pvm').onchange=scene;$('#qp').onchange=()=>loadP($('#qp').value);if(syncOn())setTimeout(()=>pubNow(true),1500);
 }
 /[#&]o=/.test(location.hash)?overlay():control();
 </script></body></html>

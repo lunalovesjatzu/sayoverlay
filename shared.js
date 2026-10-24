@@ -21,13 +21,14 @@
  /* el hub cambia entre vista completa y mini (dock del bebé) */
  addEventListener('message',e=>{const d=e.data;if(d&&d.sayMode)document.body.classList.toggle('mini',d.sayMode==='mini')});
  /* 4) Configuración local: mismas claves de siempre + respaldo */
- const PFX=/^(ovl|angelito-sayler|ruleta-de-sayler)/,SKIP=/^ovl-st-/;
+ const PFX=/^(ovl|angelito-sayler|ruleta-de-sayler)/,SKIP=/^(ovl-st-|ovlC)/;
  const C=window.SaylerCfg={
   dump(){const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(PFX.test(k)&&!SKIP.test(k))o[k]=localStorage.getItem(k)}return o},
   load(o){Object.keys(o||{}).forEach(k=>{if(PFX.test(k))try{localStorage.setItem(k,o[k])}catch(e){}})},
   export(){return{app:'sayler-suite',stamp:Date.now(),data:C.dump()}}};
  /* Enlaces sueltos (OBS / TikTok): cargan config/respaldo.json del repo si es nuevo */
- try{if(!window.__NOSYNC&&!window.opener&&window.parent===window&&location.protocol!=='file:'){
+ /* Solo se importa el respaldo del repo en navegadores donde NO has editado nada (OBS/TikTok la primera vez). Si editaste aquí, nunca se pisa en silencio. Los enlaces con config propia (#s= / #c=) tampoco lo usan. */
+ try{if(!window.__NOSYNC&&!window.opener&&window.parent===window&&location.protocol!=='file:'&&!/[#&](s|c)=/.test(location.hash)&&!(localStorage.getItem('ovlS')&&localStorage.getItem('__edited'))){
   const x=new XMLHttpRequest();x.open('GET','config/respaldo.json?'+Date.now(),false);x.send();
   if(x.status===200){const j=JSON.parse(x.responseText);if(j&&j.data&&String(j.stamp)!==localStorage.getItem('__stamp')){C.load(j.data);localStorage.setItem('__stamp',String(j.stamp))}}}}catch(e){}
 })();

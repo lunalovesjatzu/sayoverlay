@@ -20,7 +20,7 @@ En «Overlays», bajo el botón de copiar, está la casilla **🔗 Enlace fijo**
 
 ## Metas
 - Cada meta tiene **✋ A mano**: progreso que ya llevaba (con botones −100, +10, +100, +1000 y 0). Cuenta como conseguido y las monedas nuevas llenan lo que falte. Se guarda con tu configuración.
-- Debajo aparece «En el directo lleva X / Y» (cuando tienes la ventana del overlay abierta en este mismo navegador).
+- La vista previa muestra el progreso REAL de tu directo (también si el overlay corre en OBS o TikTok, con el enlace fijo; tarda unos segundos en reflejar cambios). Debajo de cada meta aparece «En el directo lleva X / Y».
 - La vista previa tiene ◀ ▶ para cambiar de página, «Que cambien solas» y un deslizador «Probar cuánto se llenan».
 
 ## Que no se borre nada

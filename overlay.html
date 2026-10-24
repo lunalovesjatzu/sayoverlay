@@ -100,7 +100,7 @@ i.l{display:inline-block;font-style:normal;animation-delay:calc(var(--i)*-.12s)}
 <div id="pvx" hidden>
 <label class="fr" id="pgrow"><span>📄 Página de las metas (si no caben todas)</span><span class="pgn"><button id="pgp">◀</button><b id="pgl">1/1</b><button id="pgn">▶</button></span></label>
 <label class="fr" id="pgarow"><span>Que cambien solas como en el directo</span><input type="checkbox" id="pga"></label>
-<label class="fr"><span>📈 Probar cuánto se llenan</span><span class="pgn"><input type="range" id="sim" min="0" max="100" value="35" style="width:130px"><b id="siml">ejemplo</b><button id="simx" title="Volver a los datos de ejemplo">↺</button></span></label>
+<label class="fr"><span>📈 Progreso en la vista previa (real si el directo está en marcha; mueve el deslizador para simular)</span><span class="pgn"><input type="range" id="sim" min="0" max="100" value="35" style="width:130px"><b id="siml">ejemplo</b><button id="simx" title="Volver a los datos de ejemplo">↺</button></span></label>
 </div>
 <p class="hint" id="pm">Haz clic una vez dentro de la ventana abierta para activar el sonido. Si usas la URL en OBS (Fuente → Navegador, 1920×1080) el fondo es transparente.</p></div></div></div></div>
 <div id="stg"><div id="box"><div id="in"></div></div></div>
@@ -179,7 +179,7 @@ function playSnd(k,vol){const d=SNDS[k],a=actx();if(!d||!a)return;const t0=a.cur
 function overlay(){
  document.documentElement.className='ov';
  const box=$('#box'),inn=$('#in'),bc=new BroadcastChannel('ovl-sayler');
- let tmI,pgI,pgN=0,pgs,extend=()=>{},tcmd=()=>{},cfg,s,type,pv,st,SK,T1,T2,vis,tk=()=>{},rows=[],cs=[],lastC,lst,seen=new Set(),SIM=null,pvAuto=0,sw=null,swT=0,pend=null,lastTxt='',lastV=0,SYN='',lastR=null;
+ let tmI,pgI,pgN=0,pgs,extend=()=>{},tcmd=()=>{},cfg,s,type,pv,st,SK,T1,T2,vis,tk=()=>{},rows=[],cs=[],lastC,lst,seen=new Set(),SIM=null,pvAuto=0,sw=null,swT=0,pend=null,lastTxt='',lastV=0,SYN='',lastR=null,REAL=null,lastPubR='',lastPubT=0;
  const save=()=>{if(!pv)try{localStorage[SK]=JSON.stringify(st)}catch(_){}};
  const sum=(m,pl)=>pl.reduce((a,p)=>a+((st.t[p]||{})[m]||0),0);
  const nf=(v,sh)=>sh&&v>=1e3?(v>=1e6?(v/1e6).toFixed(1)+'M':(v/1e3).toFixed(1)+'K'):(+(+v).toFixed(2)).toLocaleString('es-MX');
@@ -276,7 +276,7 @@ function overlay(){
     r.append(...[ic,bd,rg].filter(Boolean));inn.append(r);rows.push({r,nm,vl,fl,rg,sy})});
    pgs=el('div','pgs');inn.append(pgs);pgN=0;if(type=='metas')pgI=setInterval(()=>{if(pv&&!pvAuto)return;pgN++;layout(1)},Math.max(2,s.pg)*1000);
    tk=f=>{const g=cfg.g,SM=pv&&SIM!=null;let pool=sum('coins',s.pl);if(SM)pool=Math.round(SIM*g.items.reduce((a,it)=>a+Math.max(1,+it.t||1),0));
-    const R=g.items.map(it=>{const need=Math.max(1,it.t),ad=SM?0:(+it.add||0);let v;if(g.mode=='global'){const m=Math.max(0,Math.min(need,ad)),fl=Math.min(need-m,pool);pool-=fl;v=m+fl+(ad<0?ad:0)}else v=SM?Math.round(SIM*need):Math.min(need,sum(it.m,it.p?[it.p]:s.pl))+ad;v=Math.max(0,Math.min(need,v));return{v,need,done:v>=need}});
+    const R=g.items.map((it,ix)=>{const need=Math.max(1,it.t),ad=SM?0:(+it.add||0);let v;if(pv&&SIM==null&&REAL){v=Math.max(0,Math.min(need,+(REAL[ix]&&REAL[ix][0])||0));return{v,need,done:v>=need}}if(g.mode=='global'){const m=Math.max(0,Math.min(need,ad)),fl=Math.min(need-m,pool);pool-=fl;v=m+fl+(ad<0?ad:0)}else v=SM?Math.round(SIM*need):Math.min(need,sum(it.m,it.p?[it.p]:s.pl))+ad;v=Math.max(0,Math.min(need,v));return{v,need,done:v>=need}});
     lastR=R.map(r=>[r.v,r.need]);sendProg();
     let cur=R.findIndex((r,i)=>!r.done&&!g.items[i].off);if(cur<0)cur=R.length-1;
     R.forEach((r,i)=>{const w=rows[i],it=g.items[i];if(!w)return;const u=g.mode=='global'||it.m=='coins'?cuI():M[it.m][0],p=Math.floor(r.v/r.need*100);
@@ -303,7 +303,8 @@ function layout(anim){const cand=rows.filter(w=>!w.hid);rows.forEach(w=>w.r.styl
   inn.className=`m-${gl?'solid':s.tm} f-${gl?'none':s.fx} b-${s.bf}${s.bm=='rb'?' rbb':''}${s.it?' it':''} i-${s.idle} ip-${s.icp} ib-${s.icb} ia-${s.ica} lay-${s.lay}${s.bsh?' bshn':''}${s.bseg>0?' sg':''}${s.orn?' o-on':''}`;
   build();particles();tk(1);clearTimeout(T1);clearTimeout(T2);show();
   const c=JSON.stringify(cfg.c);if(c!=lastC){lastC=c;conn()}}
- function sendProg(){if(!pv&&lastR&&(type=='metas'||type=='barra'))try{bc.postMessage({t:'prog',type,R:lastR})}catch(_){}}
+ function sendProg(){if(pv||!lastR||!(type=='metas'||type=='barra'))return;try{bc.postMessage({t:'prog',type,R:lastR})}catch(_){}
+  if(SYN){const j=JSON.stringify(lastR),n=Date.now();if(j!==lastPubR&&n-lastPubT>4000){lastPubR=j;lastPubT=n;try{fetch('https://'+SYNC_HOST+'/'+encodeURIComponent(SYN)+'-prog',{method:'POST',body:JSON.stringify({R:lastR})}).catch(()=>{})}catch(_){}}}}
  function syncOpen(){clearTimeout(swT);if(sw){sw.onclose=null;try{sw.close()}catch(_){}sw=null}if(!SYN)return;lastTxt=localStorage.ovlC||'';lastV=+localStorage.ovlCv||0;
   const go=()=>{if(!SYN)return;let w;try{w=new WebSocket('wss://'+SYNC_HOST+'/'+encodeURIComponent(SYN)+'/ws?since=12h')}catch(_){swT=setTimeout(go,5000);return}sw=w;w.onmessage=onSync;w.onclose=()=>{if(sw===w)swT=setTimeout(go,4000)}};go()}
  const SG={};
@@ -317,7 +318,7 @@ function layout(anim){const cand=rows.filter(w=>!w.hid);rows.forEach(w=>w.r.styl
   if(pv)st={ep:cfg.ep,t:{tiktok:{coins:340,likes:120,follows:8,subs:1,chats:40},kofi:{usd:3,coins:300},twitch:{chats:20}}};
   else try{st=JSON.parse(localStorage[SK])}catch(_){}
   if(!st)st={t:{},ep:cfg.ep};lastC='';apply();syncOpen()}
- const rx=m=>{const d=m.data||{};if(d.t=='cfg'){cfg=merge(DEF(),d.cfg);apply()}else if(d.t=='ev')ingest({...d.e});else if(d.t=='tcmd'&&type=='time')tcmd(d);else if(d.t=='sim'&&pv){SIM=d.f;tk(1)}else if(d.t=='pg'&&pv&&type=='metas'){pgN+=d.d||0;layout(1)}else if(d.t=='pgauto'){pvAuto=d.on?1:0}};
+ const rx=m=>{const d=m.data||{};if(d.t=='cfg'){cfg=merge(DEF(),d.cfg);apply()}else if(d.t=='ev')ingest({...d.e});else if(d.t=='tcmd'&&type=='time')tcmd(d);else if(d.t=='sim'&&pv){SIM=d.f;tk(1)}else if(d.t=='real'&&pv){REAL=d.R;tk(1)}else if(d.t=='pg'&&pv&&type=='metas'){pgN+=d.d||0;layout(1)}else if(d.t=='pgauto'){pvAuto=d.on?1:0}};
  bc.onmessage=rx;addEventListener('message',rx);setInterval(sendProg,3000);addEventListener('pagehide',()=>{try{save()}catch(_){}});document.addEventListener('visibilitychange',()=>{if(document.hidden)try{save()}catch(_){}});addEventListener('resize',()=>{fit();tk(1)});addEventListener('hashchange',boot);boot();
 }
 
@@ -339,10 +340,12 @@ function control(){const BGIMG='data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABA
    lastPub=txt;ok=1;synMsg('✔ Enlace al día · '+new Date().toLocaleTimeString())}catch(_){synMsg('⚠ No pude actualizar el enlace (¿sin internet?). Lo intento otra vez en un momento.');pubT=setTimeout(()=>pubNow(),30000)}
   pubBusy=0;if(ok&&pubTxt()!==lastPub)pubSoon()}
  const nf2=v=>(+(+v).toFixed(2)).toLocaleString('es-MX');let PROG=null;
- function progShow(R){PROG=R;R.forEach((x,i)=>{const e=$('#gp'+i);if(e)e.textContent='En el directo lleva '+nf2(x[0])+' / '+nf2(x[1])})}
+ let REALR=null;function progShow(R){PROG=R;REALR=R;R.forEach((x,i)=>{const e=$('#gp'+i);if(e)e.textContent='En el directo lleva '+nf2(x[0])+' / '+nf2(x[1])});toPv({t:'real',R});if(SIMV==null)$('#siml').textContent='real'}
+ let pw=null,pwT=0;function progSub(){clearTimeout(pwT);if(pw){pw.onclose=null;try{pw.close()}catch(_){}pw=null}if(!syncOn())return;let w;try{w=new WebSocket('wss://'+SYNC_HOST+'/'+encodeURIComponent(cfg.sync.code)+'-prog/ws?since=latest')}catch(_){return}pw=w;
+  w.onmessage=m=>{try{const o=JSON.parse(m.data);if(o.event!='message')return;const x=JSON.parse(o.message);if(Array.isArray(x.R))progShow(x.R)}catch(_){}};w.onclose=()=>{if(pw===w)pwT=setTimeout(progSub,5000)}}
  bc.onmessage=m=>{const d=m.data;if(d&&d.t=='prog'&&Array.isArray(d.R))progShow(d.R)};
  const toPv=m=>{[$('#pv'),...document.querySelectorAll('#pvw iframe.sx')].forEach(f=>{try{f.contentWindow.postMessage(m,'*')}catch(_){}})};
- let SIMV=null,PGA=0;const pvSync=()=>{toPv({t:'pgauto',on:PGA});if(SIMV!=null)toPv({t:'sim',f:SIMV/100})};
+ let SIMV=null,PGA=0;const pvSync=()=>{toPv({t:'pgauto',on:PGA});if(REALR)toPv({t:'real',R:REALR});if(SIMV!=null)toPv({t:'sim',f:SIMV/100})};
  addEventListener('message',e=>{const d=e.data;if(d&&d.t=='pgs'&&d.type=='metas'){$('#pgl').textContent=(d.cur+1)+'/'+d.n}});
  function ch(re){setCur(cfg.cur);curTab();try{localStorage.ovlS=JSON.stringify(cfg);localStorage.__edited=String(Date.now())}catch(_){}clearTimeout(tm);tm=setTimeout(()=>{send({t:'cfg',cfg});updUrl()},120);pubSoon();if(re)view()}
  function inp(o,k,t,x,re){let i;if(t=='emo'){const w=el('span','emo'),i=inp(o,k,'text',x,re),b=el('button','','😀'),mu=k=='pt'||k=='cel';b.onclick=e=>{e.stopPropagation();pickEmoji(b,c=>{i.value=mu?(i.value+' '+c).trim():c;i.dispatchEvent(new Event('input'))},mu)};w.append(i,b);return w}
@@ -504,10 +507,10 @@ const EXTRA={metas:['🎯 Lista de metas: aspecto',[['title','Título (vacío = 
  $('#ks').onchange=e=>{cfg.key=e.target.value;ch();setKey()};$('#kc').oninput=e=>{cfg.kc=e.target.value;ch();setKey()};$('#pvb').onchange=setKey;setKey();
  $('#cp').onclick=()=>{const u=$('#url');u.select();try{navigator.clipboard.writeText(u.value)}catch(_){}document.execCommand('copy');$('#cp').textContent='✔ Copiado';setTimeout(()=>$('#cp').textContent='📋 Copiar URL para OBS',1200)};
  const pop=t=>{const w=window.open(link(t,0,keyHex()),'ov-'+t,'popup,width=960,height=540');if(w){pops[t]=w;$('#pm').textContent='Ventana abierta. Haz clic una vez dentro de ella para activar el sonido y captúrala en OBS con «Captura de ventana».'}else $('#pm').textContent='El navegador bloqueó la ventana. Permite las ventanas emergentes para esta página.'};$('#popx').onclick=()=>Object.values(pops).forEach(w=>{try{w.close()}catch(_){}});$('#pop').onclick=()=>pop(pvT||'metas');$('#popall').onclick=()=>OVT.filter(t=>cfg.act[t]).forEach((t,i)=>setTimeout(()=>pop(t),i*300));
- pv.onload=pvSync;$('#syc').checked=!!cfg.sync.on;$('#syc').onchange=e=>{cfg.sync.on=e.target.checked?1:0;if(cfg.sync.on&&!cfg.sync.code)cfg.sync.code=newCode();ch();updUrl();synMsg('');if(cfg.sync.on)pubSoon(1)};
+ pv.onload=pvSync;$('#syc').checked=!!cfg.sync.on;$('#syc').onchange=e=>{cfg.sync.on=e.target.checked?1:0;if(cfg.sync.on&&!cfg.sync.code)cfg.sync.code=newCode();ch();updUrl();synMsg('');if(cfg.sync.on)pubSoon(1);progSub()};
  $('#pgp').onclick=()=>toPv({t:'pg',d:-1});$('#pgn').onclick=()=>toPv({t:'pg',d:1});$('#pga').onchange=e=>{PGA=e.target.checked?1:0;toPv({t:'pgauto',on:PGA})};
- $('#sim').oninput=e=>{SIMV=+e.target.value;$('#siml').textContent=SIMV+'%';toPv({t:'sim',f:SIMV/100})};$('#simx').onclick=()=>{SIMV=null;$('#siml').textContent='ejemplo';toPv({t:'sim',f:null})};
- view();refQ();scene();$('#pvm').onchange=scene;$('#qp').onchange=()=>loadP($('#qp').value);if(syncOn())setTimeout(()=>pubNow(true),1500);
+ $('#sim').oninput=e=>{SIMV=+e.target.value;$('#siml').textContent=SIMV+'%';toPv({t:'sim',f:SIMV/100})};$('#simx').onclick=()=>{SIMV=null;$('#siml').textContent=REALR?'real':'ejemplo';toPv({t:'sim',f:null})};
+ view();refQ();scene();$('#pvm').onchange=scene;$('#qp').onchange=()=>loadP($('#qp').value);if(syncOn())setTimeout(()=>pubNow(true),1500);progSub();
 }
 /[#&]o=/.test(location.hash)?overlay():control();
 </script></body></html>

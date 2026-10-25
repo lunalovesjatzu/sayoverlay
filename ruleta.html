@@ -204,10 +204,19 @@ details.rule .rbody{padding:14px 18px 16px;border-top:1px solid rgba(247,240,255
 
 /* mensaje o contador cuando la ruleta está oculta */
 .idle{
-  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  position:absolute;left:50%;top:50%;transform:translate(var(--tx,-50%),var(--ty,-50%));
   width:78%;text-align:center;opacity:0;pointer-events:none;z-index:1;
   transition:opacity .4s ease;
 }
+/* posición del texto: data-pos = fila (t/m/b) + columna (l/c/r) */
+.idle[data-pos^=t]{top:3%;bottom:auto;--ty:0%}
+.idle[data-pos^=m]{top:50%;bottom:auto;--ty:-50%}
+.idle[data-pos^=b]{top:auto;bottom:3%;--ty:0%}
+.idle[data-pos$=l]{left:3%;right:auto;--tx:0%;text-align:left}
+.idle[data-pos$=c]{left:50%;right:auto;--tx:-50%;text-align:center}
+.idle[data-pos$=r]{left:auto;right:3%;--tx:0%;text-align:right}
+.idle[data-pos$=l] .bar{margin-left:0}
+.idle[data-pos$=r] .bar{margin-right:0;margin-left:auto}
 .stage:not(.on) .idle.show{opacity:1;transition:opacity .9s ease .7s}
 .idle-text{
   display:inline-block;max-width:100%;padding:.55em 1.1em;border-radius:22px;
@@ -609,6 +618,21 @@ details.rule .rbody .help + .row{margin-top:12px}
                 </select>
               </span>
             </label>
+            <label class="row"><span>Dónde se muestra el texto</span>
+              <span class="ctl">
+                <select id="idlePos">
+                  <option value="tl">↖ Arriba a la izquierda</option>
+                  <option value="tc">↑ Arriba</option>
+                  <option value="tr">↗ Arriba a la derecha</option>
+                  <option value="ml">← Izquierda</option>
+                  <option value="mc" selected>• Centro</option>
+                  <option value="mr">→ Derecha</option>
+                  <option value="bl">↙ Abajo a la izquierda</option>
+                  <option value="bc">↓ Abajo</option>
+                  <option value="br">↘ Abajo a la derecha</option>
+                </select>
+              </span>
+            </label>
             <label class="row stack"><span>Texto</span>
               <input type="text" id="idleTpl" value="Faltan {faltan} monedas para girar">
             </label>
@@ -786,7 +810,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   const tikOn=$('#tikOn'), tikPort=$('#tikPort'), tikCd=$('#tikCd'), tikCount=$('#tikCount');
   const userCd=$('#userCd'), userMax=$('#userMax'), maxQueue=$('#maxQueue'), resetMode=$('#resetMode'), showBy=$('#showBy'), blockUsers=$('#blockUsers'), idleSrc=$('#idleSrc'), cardBy=$('#cardBy');
   
-  const idleMode=$('#idleMode'), idleTpl=$('#idleTpl'), idleEl=$('#idle'), idleText=$('#idleText'), idleBar=$('#idleBar'), idleFill=$('#idleFill');
+  const idleMode=$('#idleMode'), idlePos=$('#idlePos'), idleTpl=$('#idleTpl'), idleEl=$('#idle'), idleText=$('#idleText'), idleBar=$('#idleBar'), idleFill=$('#idleFill');
   const dot=$('#dot'), tikStatus=$('#tikStatus'), logEl=$('#log');
   const poolOut=$('#poolOut'), metaOut=$('#metaOut'), totalOut=$('#totalOut'), queueOut=$('#queueOut'), cdOut=$('#cdOut');
   const simBtn=$('#simBtn'), resetPool=$('#resetPool');
@@ -1126,7 +1150,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   /* ---------- ajustes ---------- */
   const FIELDS = Object.assign({}, RULE_FIELDS, {
     key:keySel, custom:customEl, size:sizeEl, dur:durEl, auto:autoEl, remove:removeEl,
-    sndCtl, sndPop, vol, tikOn, tikPort, tikCd, tikCount, userCd, userMax, maxQueue, resetMode, showBy, blockUsers, idleMode, idleTpl, idleSrc
+    sndCtl, sndPop, vol, tikOn, tikPort, tikCd, tikCount, userCd, userMax, maxQueue, resetMode, showBy, blockUsers, idleMode, idlePos, idleTpl, idleSrc
   });
   function applySettings(){
     const color = currentKey();
@@ -1418,12 +1442,14 @@ details.rule .rbody .help + .row{margin-top:12px}
     return {
       show: mode !== 'none' && text.trim() !== '',
       text,
+      pos: idlePos.value || 'mc',
       bar: mode === 'counter' && s.scope !== 'each',
       progress: Math.min(100, s.actual / s.meta * 100)
     };
   }
   function applyIdle(i){
     idleEl.classList.toggle('show', !!i.show);
+    idleEl.dataset.pos = i.pos || 'mc';
     idleText.textContent = i.text;
     idleBar.hidden = !i.bar;
     idleFill.style.width = i.progress + '%';

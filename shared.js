@@ -69,7 +69,7 @@
     R.drop.forEach(f=>{if(f in old)o[f]=old[f];else delete o[f]});Object.assign(o,R.force);t=JSON.stringify(o)}catch(e){}}
    try{localStorage.setItem(k,t)}catch(e){}}}
   let cfgZ='',cvBest=0,lastApplied='',tm=0,waitT=0,waitCv=0;
-  const schedule=()=>{W.clearTimeout(tm);tm=W.setTimeout(applyLatest,500)};
+  const schedule=()=>{W.clearTimeout(tm);tm=W.setTimeout(applyLatest,120)};
   async function applyLatest(){const z=cfgZ,cv=cvBest;if(!z)return;let t,b;try{t=await unzipTxt(z);b=JSON.parse(t)}catch(e){return}
    const miss=[],res=resolve(b,miss);
    if(miss.length&&waitCv!==cv){waitCv=cv;W.clearTimeout(waitT);waitT=W.setTimeout(applyLatest,5000);return}
@@ -102,7 +102,7 @@
   async function post(body){for(let a=0;a<8;a++){try{const r=await fetch(HU+'/'+encodeURIComponent(st.code),{method:'POST',body});if(r.ok)return;if(r.status!==429&&r.status<500)break}catch(e){}await sleep(a<2?2500:6000)}throw new Error('post')}
   async function parts(t,id,text,label){const n=Math.ceil(text.length/SZ);for(let i=0;i<n;i++){if(label&&n>6&&i%6===0)say(label+' ('+i+'/'+n+')');await post(JSON.stringify({v:2,t,id,i,n,d:text.slice(i*SZ,(i+1)*SZ)}))}}
   let lastTxt='',busy=0,timer=0;
-  const soon=now=>{W.clearTimeout(timer);if(!st.on)return;timer=W.setTimeout(()=>pubNow(now),now?250:2500)};
+  const soon=now=>{W.clearTimeout(timer);if(!st.on)return;timer=W.setTimeout(()=>pubNow(now),now?200:600)};
   async function pubNow(force){if(!st.on||busy)return;const media={},sk={n:0},txt=JSON.stringify(strip(collect(),media,sk)),sent=loadSent(),now=Date.now();
    const need=Object.keys(media).filter(h=>!sent[h]||now-sent[h]>6*36e5);
    if(txt===lastTxt&&!force&&!need.length)return;busy=1;let ok=0;const skipped=sk.n;

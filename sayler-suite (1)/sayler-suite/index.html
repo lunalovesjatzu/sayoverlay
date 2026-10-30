@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Directo de Sayler</title>
+<script>window.__NOSYNC=1</script><script src="shared.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@1,600&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{--ink:#2b2150;--pearl:#f7f0ff;--rose:#f4b3d6;--dh:min(640px,calc(100vh - 150px))}
+*{box-sizing:border-box}html,body{height:100%;margin:0}
+body{font:600 15px Quicksand,system-ui,sans-serif;color:var(--pearl);background:linear-gradient(180deg,#1b1640,#352b66 45%,#7b66a8 80%,#d99dc4) fixed;display:flex;flex-direction:column;overflow:hidden}
+.top{display:flex;align-items:center;gap:14px;padding:10px 18px;background:rgba(27,22,64,.82);border-bottom:1px solid rgba(247,240,255,.18);flex:none;flex-wrap:wrap}
+.top h1{font:italic 600 1.7rem 'Cormorant Garamond',serif;margin:0 10px 0 0;white-space:nowrap}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tb{border:1px solid transparent;background:transparent;color:var(--pearl);opacity:.8;border-radius:999px;padding:9px 18px;cursor:pointer;font:700 .95rem Quicksand,sans-serif}
+.tb:hover{opacity:1;background:rgba(255,255,255,.1)}
+.tb.on{opacity:1;color:var(--ink);background:linear-gradient(135deg,#ffd9ec,#d9c9ff 55%,#b4ccff)}
+#stack{position:relative;flex:1;min-height:0}
+.fr{position:absolute;inset:0;width:100%;height:100%;border:0;visibility:hidden}.fr.on{visibility:visible}
+#f-bb.dock{inset:auto 16px 16px auto;width:min(430px,calc(100vw - 32px));height:var(--dh);background:#1b1640;border-radius:0 0 16px 16px;box-shadow:0 14px 40px #000a;z-index:30;position:fixed}
+#f-bb.dock.open{visibility:visible}
+#dockbar,#dockbtn{position:fixed;right:16px;z-index:31;border:1px solid rgba(247,240,255,.35);background:#2b2150;color:var(--pearl);font:700 .9rem Quicksand,sans-serif;cursor:pointer}
+#dockbar{bottom:calc(16px + var(--dh));width:min(430px,calc(100vw - 32px));padding:9px 14px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between}
+#dockbtn{bottom:16px;border-radius:999px;padding:10px 18px;box-shadow:0 8px 24px #0008}
+[hidden]{display:none!important}
+#ln{position:absolute;inset:0;overflow:auto;padding:24px;display:none}#ln.on{display:block}
+.box{max-width:900px;margin:0 auto 18px;background:rgba(33,25,70,.6);backdrop-filter:blur(14px);border:1px solid rgba(247,240,255,.2);border-radius:22px;padding:20px}
+h2{font:italic 600 1.7rem 'Cormorant Garamond',serif;margin:0 0 .6rem}p{margin:.4rem 0 .9rem;opacity:.85;line-height:1.5}
+.lk{display:grid;grid-template-columns:1fr auto;gap:6px 8px;margin:0 0 14px}.lk b{grid-column:1/-1}.lk small{grid-column:1/-1;opacity:.7;font-weight:500}
+input,button.a{font:inherit;color:var(--pearl);background:rgba(255,255,255,.1);border:1px solid rgba(247,240,255,.3);border-radius:12px;padding:8px 12px;min-width:0}button.a{cursor:pointer}button.a:hover{background:rgba(255,255,255,.2)}
+.row{display:flex;gap:8px;flex-wrap:wrap}#msg{color:#ffd9ec;min-height:1.2em}
+</style></head><body>
+<div class="top"><h1>Directo de Sayler</h1>
+<nav class="tabs"><button class="tb" data-t="ov">🎀 Overlays</button><button class="tb" data-t="bb">🧚 Bebé pelón</button><button class="tb" data-t="rl">🎡 Ruleta</button><button class="tb" data-t="ln">🔗 Enlaces y respaldo</button></nav></div>
+<div id="stack">
+<iframe class="fr" id="f-ov" src="overlay.html" title="Overlays"></iframe>
+<iframe class="fr" id="f-bb" src="bebe.html" title="Bebé pelón"></iframe>
+<iframe class="fr" id="f-rl" src="ruleta.html" title="Ruleta"></iframe>
+<section id="ln">
+ <div class="box" id="first" hidden><h2>Primera vez aquí</h2><p>Este navegador todavía no tiene tu configuración. Si subiste <code>config/respaldo.json</code> al repo puedes cargarla ahora.</p><button class="a" id="repo0">⬇ Cargar configuración del repo</button></div>
+ <div class="box"><h2>Enlaces para OBS y TikTok (fondo transparente)</h2><p>Pega cada enlace como fuente de navegador (OBS) o enlace web (TikTok LIVE Studio). No llevan fondo verde. Cada uno funciona por separado.</p><div id="links"></div></div>
+ <div class="box"><h2>Respaldo de tu configuración</h2>
+ <p>Tu configuración vive en este navegador (las mismas claves de tus páginas de antes). En otra computadora, en OBS o en GitHub Pages no aparece sola: expórtala aquí y súbela al repo como <code>config/respaldo.json</code>; los enlaces la cargan solos cuando cambia.</p>
+ <div class="row"><button class="a" id="exp">💾 Exportar respaldo</button><label class="a" style="cursor:pointer;border:1px solid rgba(247,240,255,.3);border-radius:12px;padding:8px 12px;background:rgba(255,255,255,.1)">⬆ Importar respaldo<input type="file" id="imp" accept=".json" hidden></label><button class="a" id="repo">⬇ Cargar del repo</button></div>
+ <p id="msg"></p><p><small>Ojo: el respaldo incluye tus códigos (por ejemplo el de Ko-fi/ntfy) e imágenes. Si tu repo es público, cualquiera podría verlo. La biblioteca de audios de la ruleta (IndexedDB) no entra en el respaldo.</small></p></div>
+</section></div>
+<button id="dockbar" hidden><span>🧚 Bebé pelón · vista previa</span><span>▾ cerrar</span></button>
+<button id="dockbtn" hidden>🧚 Ver bebé ▴</button>
+<script>
+const $=s=>document.querySelector(s),F={ov:$('#f-ov'),bb:$('#f-bb'),rl:$('#f-rl')},ls=(k,v)=>{try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){}};
+let tab=ls('saylerHubTab')||'ov',dock=ls('saylerHubDock')!=='0';
+const mode=()=>{try{F.bb.contentWindow.postMessage({sayMode:tab==='bb'?'full':'mini'},'*')}catch(e){}};
+function show(t){tab=t;ls('saylerHubTab',t);document.querySelectorAll('.tb').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+ F.ov.classList.toggle('on',t==='ov');F.rl.classList.toggle('on',t==='rl');$('#ln').classList.toggle('on',t==='ln');
+ const bb=t==='bb',open=dock&&!bb;F.bb.classList.toggle('on',bb);F.bb.classList.toggle('dock',!bb);F.bb.classList.toggle('open',open);
+ $('#dockbar').hidden=!open;$('#dockbtn').hidden=bb||open;mode()}
+document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('.tb');if(b)show(b.dataset.t)};
+$('#dockbar').onclick=()=>{dock=false;ls('saylerHubDock','0');show(tab)};$('#dockbtn').onclick=()=>{dock=true;ls('saylerHubDock','1');show(tab)};
+F.bb.addEventListener('load',mode);show(tab);
+/* enlaces */
+const base=location.href.split('#')[0].replace(/[^/]*$/,'');
+const syncCode=()=>{try{const s=JSON.parse(localStorage.ovlS).sync;return s&&s.on&&s.code?s.code:''}catch(e){return ''}};
+const codeOf=k=>{try{const s=JSON.parse(localStorage.getItem(k));return s&&s.on&&s.code?s.code:''}catch(e){return ''}};
+function drawLinks(){const sc=syncCode(),bs=codeOf('angelito-sayler-v1-sync'),rs=codeOf('ruleta-de-sayler-sync');
+const L=[['🧚 Bebé pelón (autónomo)',base+'bebe.html#live'+(bs?'&s='+bs:''),bs?'Enlace fijo y transparente: cópialo una sola vez. Se actualiza solo cuando cambias algo en la pestaña Bebé (con esa página abierta). Corre solo y se conecta a TikFinity; apaga «Conectar con TikFinity» en la pestaña Bebé si no quieres que cuente doble.':'Corre solo: se conecta a TikFinity con tu configuración (la toma de config/respaldo.json). Apaga «Conectar con TikFinity» en la pestaña Bebé si no quieres que cuente doble.'],
+['🧚 Bebé pelón (ventana espejo del hub)',base+'bebe.html#directo','Para captura de ventana en el mismo navegador; sigue lo que haces en el hub (fondo chroma).'],
+['🎡 Ruleta (autónoma)',base+'ruleta.html#live'+(rs?'&s='+rs:''),rs?'Enlace fijo y transparente: cópialo una sola vez. Se actualiza solo cuando cambias algo en la pestaña Ruleta (con esa página abierta). Gira sola con los regalos y ejecuta sus acciones; apaga TikFinity en la pestaña Ruleta si no quieres doble conteo.':'Gira sola con los regalos y ejecuta sus acciones (toma la configuración de config/respaldo.json). Apaga TikFinity en la pestaña Ruleta si no quieres doble conteo.'],
+['🎡 Ruleta (ventana espejo del hub)',base+'ruleta.html#directo','Para captura de ventana en el mismo navegador (fondo chroma).'],
+...[['metas','🎯 Metas'],['barra','📊 Barra'],['cont','🔢 Contador'],['time','⏳ Temporizador'],['ev','💬 Últimos eventos']].map(([k,t])=>[t+' (overlay)',base+'overlay.html#o='+k+(sc?'&s='+sc:''),sc?'Enlace fijo y transparente: cópialo una sola vez. Se actualiza solo cuando cambias algo en la pestaña Overlays (con esa página abierta).':'Enlace propio, transparente. Usa el diseño y los valores que tienes guardados (en OBS/TikTok los toma de config/respaldo.json; vuelve a exportarlo si cambias algo).'])];
+$('#links').innerHTML=L.map(([t,u,n])=>`<div class="lk"><b>${t}</b><input readonly value="${u}"><button class="a" data-u="${u}">📋 Copiar</button><small>${n}</small></div>`).join('')}
+drawLinks();addEventListener('storage',e=>{if(e.key==='ovlS'||e.key==='angelito-sayler-v1-sync'||e.key==='ruleta-de-sayler-sync')drawLinks()});
+setTimeout(drawLinks,1500);
+$('#links').onclick=e=>{const b=e.target.closest('[data-u]');if(!b)return;navigator.clipboard.writeText(b.dataset.u).catch(()=>{});b.textContent='✔ Copiado';setTimeout(()=>b.textContent='📋 Copiar',1500)};
+/* respaldo */
+const msg=t=>$('#msg').textContent=t;
+$('#exp').onclick=()=>{const j=SaylerCfg.export();ls('__stamp',String(j.stamp));const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(j)],{type:'application/json'}));a.download='respaldo.json';a.click();msg('Listo. Sube ese archivo al repo en config/respaldo.json')};
+$('#imp').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const j=JSON.parse(await f.text());SaylerCfg.load(j.data||j);if(j.stamp)ls('__stamp',String(j.stamp));msg('Importado ✔ Recargando…');setTimeout(()=>location.reload(),700)}catch(x){msg('Ese archivo no es un respaldo válido.')}};
+const fromRepo=async ask=>{try{const r=await fetch('config/respaldo.json?'+Date.now());if(!r.ok)throw 0;const j=await r.json();if(ask&&!confirm('Esto reemplaza la configuración guardada en este navegador. ¿Seguir?'))return;SaylerCfg.load(j.data);ls('__stamp',String(j.stamp));location.reload()}catch(x){msg('No encontré config/respaldo.json en el repo.')}};
+$('#repo').onclick=()=>fromRepo(1);$('#repo0').onclick=()=>fromRepo(0);
+if(!Object.keys(SaylerCfg.dump()).length&&location.protocol!=='file:')fetch('config/respaldo.json',{method:'HEAD'}).then(r=>{if(r.ok)$('#first').hidden=false}).catch(()=>{});
+</script></body></html>

@@ -1,0 +1,2880 @@
+<!DOCTYPE html>
+<html lang="es">
+<head><script src="shared.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ruleta de Sayler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --night:#1e1840;
+  --ink:#2b2150;
+  --dusk:#5b4a8e;
+  --lav:#c9b6f2;
+  --pearl:#f7f0ff;
+  --rose:#f4b3d6;
+  --blush:#ffd9ec;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{
+  min-height:100vh;
+  font-family:'Quicksand','Segoe UI',system-ui,sans-serif;
+  color:var(--pearl);
+  background:linear-gradient(180deg,#1b1640 0%,#352b66 32%,#7b66a8 64%,#d99dc4 100%) fixed;
+  overflow-x:hidden;
+}
+
+/* ---------- cielo decorativo ---------- */
+.sky{position:fixed;inset:0;z-index:0;pointer-events:none}
+.stars{
+  position:absolute;inset:0;
+  background-image:
+    radial-gradient(1.6px 1.6px at 8% 14%,#fff 50%,transparent 52%),
+    radial-gradient(1.2px 1.2px at 17% 38%,#fff 50%,transparent 52%),
+    radial-gradient(1.8px 1.8px at 26% 8%,#fff 50%,transparent 52%),
+    radial-gradient(1.2px 1.2px at 38% 26%,#fff 50%,transparent 52%),
+    radial-gradient(1.6px 1.6px at 52% 10%,#fff 50%,transparent 52%),
+    radial-gradient(1.2px 1.2px at 63% 33%,#fff 50%,transparent 52%),
+    radial-gradient(1.8px 1.8px at 74% 16%,#fff 50%,transparent 52%),
+    radial-gradient(1.2px 1.2px at 86% 28%,#fff 50%,transparent 52%),
+    radial-gradient(1.6px 1.6px at 93% 7%,#fff 50%,transparent 52%),
+    radial-gradient(1.2px 1.2px at 4% 52%,#fff 50%,transparent 52%),
+    radial-gradient(1.4px 1.4px at 46% 46%,#fff 50%,transparent 52%);
+  opacity:.8;
+  animation:twinkle 7s ease-in-out infinite alternate;
+}
+.moon{
+  position:absolute;top:5vh;right:7vw;width:84px;height:84px;border-radius:50%;
+  box-shadow:inset -24px 6px 0 0 #f4ecff;
+  filter:drop-shadow(0 0 16px rgba(244,236,255,.5));
+  opacity:.9;
+}
+.bf{position:absolute;width:46px;height:46px;opacity:.6;filter:drop-shadow(0 0 10px rgba(255,200,235,.8));animation:drift 19s ease-in-out infinite alternate}
+.b1{left:5vw;top:64vh;color:#f4b3d6}
+.b2{right:11vw;top:42vh;color:#cdb8ff;width:38px;height:38px;animation-duration:23s;animation-delay:-6s}
+.b3{left:46vw;top:11vh;color:#ffd9ec;width:30px;height:30px;animation-duration:27s;animation-delay:-12s}
+@keyframes twinkle{from{opacity:.45}to{opacity:.95}}
+@keyframes drift{
+  from{transform:translate(0,0) rotate(-8deg)}
+  to{transform:translate(28px,-36px) rotate(10deg)}
+}
+
+/* ---------- estructura ---------- */
+.app{position:relative;z-index:1;max-width:1400px;margin:0 auto;padding:30px 28px 20px}
+header h1{
+  font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:600;
+  font-size:clamp(2.6rem,5vw,3.8rem);margin:0;line-height:1;letter-spacing:.01em;
+}
+header p{margin:.5rem 0 0;color:rgba(247,240,255,.78);font-weight:500}
+.layout{display:grid;grid-template-columns:minmax(300px,430px) 1fr;gap:26px;margin-top:26px;align-items:start}
+@media (max-width:1000px){.layout{grid-template-columns:1fr}}
+.col-left,.col-right{display:grid;gap:22px}
+.panel{
+  background:rgba(33,25,70,.5);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  border:1px solid rgba(247,240,255,.2);
+  border-radius:26px;padding:22px;
+}
+.panel h2{
+  font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:1.65rem;
+  margin:0 0 .8rem;letter-spacing:.01em;
+}
+.panel h3{
+  font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:1.3rem;
+  margin:1.3rem 0 .75rem;
+}
+.foot{
+  position:relative;z-index:1;text-align:center;padding:10px 0 30px;
+  color:rgba(247,240,255,.45);font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:600;
+  font-size:1.35rem;letter-spacing:.14em;
+}
+
+/* ---------- cuadro de opciones ---------- */
+textarea{
+  width:100%;min-height:210px;resize:vertical;
+  background:rgba(255,255,255,.08);color:var(--pearl);
+  border:1px solid rgba(247,240,255,.28);border-radius:16px;
+  padding:14px 16px;font:500 1rem/1.55 'Quicksand',system-ui,sans-serif;
+}
+textarea::placeholder,input[type=text]::placeholder{color:rgba(247,240,255,.45)}
+textarea:focus-visible,select:focus-visible,input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
+textarea.nudge{animation:nudge .5s ease}
+@keyframes nudge{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.meta{display:flex;justify-content:space-between;align-items:center;margin-top:10px;font-size:.92rem;color:rgba(247,240,255,.72)}
+.link{background:none;border:0;color:var(--blush);padding:4px 2px;text-decoration:underline;text-underline-offset:3px;cursor:pointer;font:inherit}
+
+/* ---------- ruleta (compartido) ---------- */
+.wheel{position:relative;width:100%;aspect-ratio:1}
+.disc{position:absolute;left:5%;top:7%;width:90%;height:90%}
+.disc canvas{width:100%;height:100%;display:block;border-radius:50%}
+.pointer{
+  position:absolute;left:50%;top:0;width:11%;aspect-ratio:3/4;
+  transform:translateX(-50%);transform-origin:50% 22%;
+  z-index:3;overflow:visible;
+}
+.preview .wheel{width:min(100%,340px);margin:0 auto}
+
+/* ---------- controles ---------- */
+.row{display:flex;justify-content:space-between;align-items:center;gap:14px;margin:0 0 16px;font-weight:600}
+.row:last-child{margin-bottom:0}
+.row .ctl{display:flex;align-items:center;gap:10px;flex:none}
+.row.stack{display:block}
+.row.stack input[type=text]{width:100%;margin-top:7px}
+select,input[type=number],input[type=text]{
+  background:rgba(255,255,255,.1);color:var(--pearl);border:1px solid rgba(247,240,255,.28);
+  border-radius:12px;padding:8px 10px;font:600 .95rem 'Quicksand',system-ui,sans-serif;
+}
+select option{color:#2b2150}
+input[type=number]{width:84px;text-align:center}
+input[type=range]{accent-color:var(--rose);width:150px}
+input[type=color]{width:38px;height:34px;border:1px solid rgba(247,240,255,.4);border-radius:10px;background:none;padding:2px;cursor:pointer}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--rose)}
+.out{min-width:3.4em;text-align:right;font-weight:500;color:rgba(247,240,255,.75);font-size:.92rem}
+.help{font-size:.88rem;color:rgba(247,240,255,.7);margin:.4rem 0 0;line-height:1.5;font-weight:500}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:0 34px}
+.mini{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row .ctl select{max-width:250px}
+.rules{display:grid;gap:10px;margin:0 0 6px}
+details.rule{margin:0;border:1px solid rgba(247,240,255,.2);border-radius:18px;background:rgba(255,255,255,.05)}
+details.rule>summary{display:flex;align-items:center;gap:12px;padding:12px 16px;list-style:none;color:var(--pearl)}
+details.rule>summary::-webkit-details-marker{display:none}
+details.rule>summary::after{content:"\25BE";margin-left:auto;color:var(--blush)}
+details.rule[open]>summary::after{content:"\25B4"}
+details.rule .nm{font-weight:700}
+details.rule .rsum{font-weight:500;font-size:.85rem;color:rgba(247,240,255,.65)}
+details.rule.off .nm,details.rule.off .rsum{opacity:.5}
+details.rule .rbody{padding:14px 18px 16px;border-top:1px solid rgba(247,240,255,.12)}
+.bulk{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 12px}
+.card .by{display:block;font-family:'Quicksand',system-ui,sans-serif;font-style:normal;font-weight:600;font-size:.26em;letter-spacing:.04em;color:var(--blush);margin-top:.7em}
+.card .by:empty{display:none}
+
+
+/* ---------- zona del directo ---------- */
+.hint{margin:-.2rem 0 1rem;color:rgba(247,240,255,.75);font-weight:500;max-width:62ch;line-height:1.5}
+.stage-scroll{overflow-x:auto;padding:20px;display:flex}
+.stage{
+  --s:560px;
+  position:relative;flex:none;margin:0 auto;
+  width:var(--s);height:var(--s);
+  background:var(--key,#00ff00);
+  outline:1px dashed rgba(247,240,255,.55);outline-offset:9px;
+  overflow:hidden;
+}
+.stage .wheel{position:absolute;inset:0;width:100%;height:100%;aspect-ratio:auto;opacity:0;transition:opacity 1.4s ease}
+.stage.on .wheel{opacity:1}
+
+/* resultado dentro del espacio de la ruleta */
+.result{
+  position:absolute;left:5%;top:7%;width:90%;height:90%;border-radius:50%;
+  display:grid;place-items:center;overflow:hidden;pointer-events:none;
+  background:radial-gradient(circle,rgba(30,24,64,.66) 0%,rgba(30,24,64,.55) 55%,rgba(30,24,64,.3) 100%);
+  opacity:0;transition:opacity .9s ease;z-index:2;
+}
+.result.show{opacity:1}
+.ring{
+  position:absolute;inset:6%;border-radius:50%;
+  border:1.5px solid rgba(255,217,236,.75);opacity:0;
+}
+.result.show .ring{animation:ring 2.8s cubic-bezier(.2,.7,.2,1) 1}
+@keyframes ring{from{transform:scale(.55);opacity:.9}to{transform:scale(1.02);opacity:0}}
+.card{
+  max-width:72%;text-align:center;
+  font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:600;
+  color:var(--pearl);line-height:1.04;
+  text-shadow:0 2px 18px rgba(30,24,64,.7);
+  transform:scale(.94);transition:transform 1.3s cubic-bezier(.2,.8,.2,1);
+  overflow-wrap:anywhere;
+}
+.result.show .card{transform:scale(1)}
+.card::before,.card::after{
+  content:"\2726";display:block;font-style:normal;font-size:.3em;color:var(--rose);
+}
+.card::before{margin-bottom:.5em}
+.card::after{margin-top:.5em}
+.card[data-size=xl]{font-size:calc(var(--s)*.15)}
+.card[data-size=l]{font-size:calc(var(--s)*.115)}
+.card[data-size=m]{font-size:calc(var(--s)*.085)}
+.card[data-size=s]{font-size:calc(var(--s)*.062)}
+.sp{position:absolute;color:var(--blush);font-size:calc(var(--s)*.03);opacity:0}
+.result.show .sp{animation:sparkle 3.4s ease-in-out infinite}
+@keyframes sparkle{0%,100%{opacity:0;transform:scale(.6)}50%{opacity:.95;transform:scale(1)}}
+
+/* mensaje o contador cuando la ruleta está oculta */
+.idle{
+  position:absolute;left:50%;top:50%;transform:translate(var(--tx,-50%),var(--ty,-50%));
+  width:78%;text-align:center;opacity:0;pointer-events:none;z-index:1;
+  transition:opacity .4s ease;
+}
+/* posición del texto: data-pos = fila (t/m/b) + columna (l/c/r) */
+.idle[data-pos^=t]{top:3%;bottom:auto;--ty:0%}
+.idle[data-pos^=m]{top:50%;bottom:auto;--ty:-50%}
+.idle[data-pos^=b]{top:auto;bottom:3%;--ty:0%}
+.idle[data-pos$=l]{left:3%;right:auto;--tx:0%;text-align:left}
+.idle[data-pos$=c]{left:50%;right:auto;--tx:-50%;text-align:center}
+.idle[data-pos$=r]{left:auto;right:3%;--tx:0%;text-align:right}
+.idle[data-pos$=l] .bar{margin-left:0}
+.idle[data-pos$=r] .bar{margin-right:0;margin-left:auto}
+.stage:not(.on) .idle.show{opacity:1;transition:opacity .9s ease .7s}
+.idle-text{
+  display:inline-block;max-width:100%;padding:.55em 1.1em;border-radius:22px;
+  background:rgba(43,33,80,.95);border:1px solid rgba(255,217,236,.6);
+  font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:600;
+  font-size:calc(var(--s)*.06);line-height:1.15;color:var(--pearl);overflow-wrap:anywhere;
+}
+.bar{
+  width:62%;height:12px;margin:.9em auto 0;border-radius:999px;overflow:hidden;
+  background:rgba(43,33,80,.95);border:1px solid rgba(255,217,236,.6);
+}
+.bar[hidden]{display:none}
+.bar i{display:block;height:100%;width:0;border-radius:999px;background:linear-gradient(90deg,#f4b3d6,#c9b6f2);transition:width .6s ease}
+
+.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.spin{
+  border:0;border-radius:999px;padding:16px 70px;cursor:pointer;
+  font:700 1.25rem 'Quicksand',system-ui,sans-serif;letter-spacing:.04em;color:var(--ink);
+  background:linear-gradient(135deg,#ffd9ec,#d9c9ff 55%,#b4ccff);
+  box-shadow:0 8px 30px rgba(244,179,214,.32),inset 0 1px 0 rgba(255,255,255,.75);
+  transition:transform .15s ease,filter .2s ease;
+}
+.spin:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.spin:active{transform:translateY(1px)}
+.spin:disabled{opacity:.55;cursor:default;transform:none;filter:none}
+.ghost{
+  background:transparent;border:1px solid rgba(247,240,255,.42);color:var(--pearl);
+  border-radius:999px;padding:14px 26px;cursor:pointer;font:600 1rem 'Quicksand',system-ui,sans-serif;
+  transition:background .2s ease;
+}
+.ghost.small{padding:9px 18px;font-size:.92rem}
+.ghost:hover{background:rgba(255,255,255,.1)}
+.popmsg{text-align:center;margin:12px 0 0;min-height:1.2em;color:var(--blush);font-weight:600;font-size:.92rem}
+
+/* ---------- TikTok ---------- */
+.status{display:flex;align-items:center;font-weight:600;margin:0 0 6px}
+.dot{width:11px;height:11px;border-radius:50%;background:#8a82a8;display:inline-block;margin-right:9px}
+.dot.on{background:#8fe3b8;box-shadow:0 0 10px #8fe3b8}
+.dot.connecting,.dot.retry{background:#ffd27a}
+.stats{display:flex;flex-wrap:wrap;gap:8px 26px;padding:14px 18px;border-radius:18px;background:rgba(255,255,255,.07);margin:1.1rem 0 .9rem;font-weight:600}
+.stats span{color:rgba(247,240,255,.75);font-weight:500}
+.stats b{font-size:1.2rem;color:var(--pearl);margin-left:4px}
+details{margin-top:14px}
+summary{cursor:pointer;color:var(--blush);font-weight:600}
+.log{
+  font:500 .82rem/1.5 ui-monospace,Consolas,monospace;max-height:170px;overflow:auto;white-space:pre-wrap;
+  background:rgba(0,0,0,.28);border-radius:14px;padding:10px 12px;margin-top:10px;color:rgba(247,240,255,.85);
+}
+
+/* sonido bloqueado en la ventana del directo */
+.gate{
+  position:fixed;left:50%;bottom:12px;transform:translateX(-50%);z-index:20;
+  border:1px solid rgba(255,217,236,.6);background:rgba(43,33,80,.95);color:var(--pearl);
+  border-radius:999px;padding:8px 18px;font:600 .9rem 'Quicksand',system-ui,sans-serif;cursor:pointer;
+}
+.gate[hidden]{display:none}
+
+/* ---------- ventana del directo (#directo) ---------- */
+body.directo{background:var(--key,#00ff00);overflow:hidden}
+.directo .sky,.directo header,.directo .col-left,.directo .tik-panel,.directo .foot,
+.directo .stage-head,.directo .hint,.directo .actions,.directo .popmsg{display:none}
+.directo .app{padding:0;max-width:none;height:100vh;display:grid;place-items:center}
+.directo .layout,.directo .col-right{display:block;margin:0;width:100%}
+.directo .stage-panel{background:none;border:0;border-radius:0;padding:0;-webkit-backdrop-filter:none;backdrop-filter:none}
+.directo .stage-scroll{padding:0;overflow:hidden;display:block}
+.directo .stage{--s:min(100vw,100vh);outline:none;margin:0 auto}
+
+/* ---------- perfiles ---------- */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.chip{
+  background:rgba(255,255,255,.08);color:var(--pearl);border:1px solid rgba(247,240,255,.3);
+  border-radius:999px;padding:8px 14px;cursor:pointer;
+  font:600 .95rem 'Quicksand',system-ui,sans-serif;transition:background .2s ease;
+}
+.chip:hover{background:rgba(255,255,255,.16)}
+.chip small{margin-left:7px;font-weight:500;font-size:.8rem;opacity:.65}
+.chip.on{background:linear-gradient(135deg,#ffd9ec,#d9c9ff 55%,#b4ccff);color:var(--ink);border-color:transparent}
+.chip.dirty::after{content:" \25CF";color:#d9709f}
+.pstate{margin:0 0 12px;font-weight:600;font-size:.92rem;color:var(--blush)}
+.pnote{min-height:1.2em;margin:10px 0 0;font-weight:600;font-size:.9rem;color:var(--rose)}
+.ghost.danger{border-color:rgba(244,179,214,.6);color:var(--blush)}
+.ghost:disabled{opacity:.45;cursor:default;background:transparent}
+.panel .mini + .mini{margin-top:10px}
+
+/* ---------- sonidos y links ---------- */
+.lib{display:flex;flex-direction:column;gap:6px;margin:12px 0;max-height:300px;overflow:auto}
+.li{display:flex;flex-wrap:wrap;align-items:center;gap:8px;border:1px solid rgba(247,240,255,.22);border-radius:12px;padding:6px 10px;background:rgba(255,255,255,.05)}
+.li input[type=text]{flex:1 1 150px;min-width:0;padding:6px 8px}
+.li input[type=number]{width:74px;padding:6px 8px}
+.li select{padding:4px 6px;font-size:.85rem}
+.li .dur{font-size:.82rem;font-weight:600;opacity:.8;white-space:nowrap}
+.li .ghost{padding:4px 10px;font-size:.85rem}
+.sdock{position:fixed;right:14px;bottom:14px;z-index:60;display:flex;flex-direction:column;gap:8px;max-width:272px}
+.scard{background:rgba(32,18,58,.94);border:1px solid rgba(247,240,255,.35);border-radius:14px;padding:8px 10px;color:var(--pearl);box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.scard .sh{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:700;font-size:.88rem}
+.scard .sh span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scard .sh .ghost{padding:2px 9px;font-size:.8rem}
+.scard .sb{margin-top:8px;width:240px;height:135px;border-radius:8px;overflow:hidden;background:#000}
+.scard .sb iframe,.scard .sb video{width:240px;height:135px;border:0;display:block}
+
+@media (prefers-reduced-motion:reduce){
+  .stars,.bf,.result.show .sp,.result.show .ring{animation:none}
+}
+
+/* ---------- VTube Studio ---------- */
+.act{border:1px solid rgba(247,240,255,.25);border-radius:14px;padding:12px 14px;margin:0 0 10px;background:rgba(255,255,255,.05)}
+.act h4{margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:.98rem}
+.act h4 .ghost{padding:4px 11px;font-size:.85rem}
+.act .row{margin-bottom:10px}
+.act input[type=color]{width:46px}
+.pool{border:1px dashed rgba(247,240,255,.35);border-radius:12px;padding:10px 12px;margin:0 0 10px;background:rgba(255,255,255,.04)}
+.pool .ph{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px;font-weight:700;font-size:.9rem}
+.pool .pg{font-size:.8rem;font-weight:800;color:var(--rose);margin:8px 0 2px;text-transform:uppercase;letter-spacing:.04em}
+.pool .pl{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:2px 12px;max-height:200px;overflow:auto}
+.pool label{display:flex;align-items:center;gap:8px;font-size:.92rem;font-weight:600;padding:3px 0;cursor:pointer}
+.pool input{width:auto;margin:0;flex:none}
+.row.stack select#vOpt{width:100%;max-width:none;margin-top:7px}
+
+/* ---------- pestañas ---------- */
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 18px;padding-bottom:14px;border-bottom:1px solid rgba(247,240,255,.18)}
+.tab{
+  background:rgba(255,255,255,.06);color:var(--pearl);border:1px solid rgba(247,240,255,.3);
+  border-radius:999px;padding:9px 18px;cursor:pointer;
+  font:700 .98rem 'Quicksand',system-ui,sans-serif;transition:background .2s ease;
+}
+.tab:hover{background:rgba(255,255,255,.14)}
+.tab:focus-visible{outline:2px solid var(--rose);outline-offset:2px}
+.tab[aria-selected=true]{background:linear-gradient(135deg,#ffd9ec,#d9c9ff 55%,#b4ccff);color:var(--ink);border-color:transparent}
+.tab small{margin-left:7px;font-weight:700;font-size:.78rem;opacity:.85}
+.tab small:empty{display:none}
+.tabpane[hidden]{display:none}
+.directo .tabs-panel{display:none}
+
+/* ---------- contadores: editor ---------- */
+.clist{display:grid;gap:10px;margin:14px 0}
+.cgrp{font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:1.2rem;margin:1.2rem 0 .7rem;color:var(--blush)}
+.cgrp:first-child{margin-top:0}
+.cwarn{color:#ffd27a;font-size:.86rem;font-weight:600;margin:-.3rem 0 .8rem;line-height:1.4}
+.cwarn:empty{display:none}
+.cbtns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+details.rule .rbody .help + .row{margin-top:12px}
+
+/* ---------- contadores: cuadro del directo ---------- */
+.clayer{position:absolute;inset:0;z-index:6;pointer-events:none}
+.cpos{
+  position:absolute;left:0;right:0;display:flex;flex-direction:column;align-items:center;
+  gap:calc(var(--s)*.015);padding:0 4%;
+}
+.cpos[data-p=top]{top:3%}
+.cpos[data-p=center]{top:50%;transform:translateY(-50%)}
+.cpos[data-p=bottom]{bottom:3%}
+.cnt{
+  --fs:7;--fg:#f7f0ff;--bg:rgba(43,33,80,.9);--ac:#f4b3d6;--p:100%;
+  display:flex;flex-direction:column;align-items:center;width:max-content;max-width:100%;
+  text-align:center;color:var(--fg);font-size:calc(var(--s)*var(--fs)/100);line-height:1.1;
+  font-variant-numeric:tabular-nums;white-space:pre-line;overflow-wrap:anywhere;
+}
+.cnt.f-eleg{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:600}
+.cnt.f-round{font-family:'Quicksand',system-ui,sans-serif;font-weight:700}
+.cnt.f-dig{font-family:ui-monospace,Consolas,'Courier New',monospace;font-weight:700}
+.cnt.c-cap .ct{display:inline-block;max-width:100%;padding:.5em 1.1em;border-radius:.9em;background:var(--bg);border:1px solid var(--ac)}
+.cnt.c-txt .ct{display:inline-block;text-shadow:0 2px 14px rgba(0,0,0,.65),0 0 3px rgba(0,0,0,.55)}
+.cnt .cbar{
+  align-self:stretch;min-width:calc(var(--s)*.3);height:calc(var(--s)*.016);min-height:6px;
+  margin:.5em 0 0;border-radius:999px;overflow:hidden;background:rgba(0,0,0,.45);border:1px solid var(--ac);
+}
+.cnt .cbar i{display:block;height:100%;width:var(--p);background:var(--ac);border-radius:999px;transition:width .25s linear}
+.cnt.c-ring .ri{position:relative;width:4em;aspect-ratio:1;display:grid;place-items:center}
+.cnt.c-ring .ri::before{
+  content:"";position:absolute;inset:0;border-radius:50%;
+  background:conic-gradient(var(--ac) var(--p),rgba(255,255,255,.22) 0);
+  -webkit-mask:radial-gradient(farthest-side,transparent 85%,#000 86%);
+  mask:radial-gradient(farthest-side,transparent 85%,#000 86%);
+}
+.cnt.c-ring .ct{
+  position:relative;width:86%;height:86%;border-radius:50%;background:var(--bg);
+  display:grid;place-items:center;padding:6%;font-size:.62em;
+}
+.cnt.done .ct{animation:cpulse 1s ease-in-out infinite alternate}
+@keyframes cpulse{from{transform:scale(1)}to{transform:scale(1.06)}}
+@media (prefers-reduced-motion:reduce){.cnt.done .ct{animation:none}.cnt .cbar i{transition:none}}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="pinG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffe3f1"/>
+      <stop offset="1" stop-color="#d9709f"/>
+    </linearGradient>
+    <symbol id="pin" viewBox="0 0 60 80">
+      <path d="M30 78C30 78 5 47 5 28a25 25 0 1 1 50 0c0 19-25 50-25 50z" fill="url(#pinG)" stroke="#fff6ff" stroke-width="3" stroke-linejoin="round"/>
+      <circle cx="30" cy="28" r="10" fill="#fff6ff"/>
+      <circle cx="30" cy="28" r="4.5" fill="#7a5bb8"/>
+    </symbol>
+    <symbol id="bf" viewBox="0 0 64 64">
+      <g fill="currentColor">
+        <path d="M32 30C20 6 2 8 6 26c2 10 16 10 26 6z"/>
+        <path d="M32 30C44 6 62 8 58 26c-2 10-16 10-26 6z"/>
+        <path d="M32 34C22 38 10 40 14 54c4 8 16-2 18-16z" opacity=".8"/>
+        <path d="M32 34C42 38 54 40 50 54c-4 8-16-2-18-16z" opacity=".8"/>
+      </g>
+      <rect x="31" y="22" width="2" height="26" rx="1" fill="#fff6ff"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="sky" aria-hidden="true">
+  <div class="stars"></div>
+  <div class="moon"></div>
+  <svg class="bf b1"><use href="#bf"/></svg>
+  <svg class="bf b2"><use href="#bf"/></svg>
+  <svg class="bf b3"><use href="#bf"/></svg>
+</div>
+
+<main class="app">
+  <header>
+    <h1>Ruleta de Sayler</h1>
+    <p>Escribe tus opciones, mira cómo queda y gírala cuando quieras o cuando lleguen regalos.</p>
+  </header>
+
+  <div class="layout">
+    <section class="col-left">
+      <div class="panel">
+        <h2>Perfiles</h2>
+        <div class="chips" id="pChips"></div>
+        <p class="pstate" id="pState"></p>
+        <label class="row stack"><span>Nombre del perfil</span>
+          <input type="text" id="pName" maxlength="40" placeholder="Ej: Retos, Juegos, Preguntas" autocomplete="off">
+        </label>
+        <div class="mini" style="margin-top:12px">
+          <button class="ghost small" id="pSave" type="button">Guardar cambios</button>
+          <button class="ghost small" id="pSaveNew" type="button">Guardar como nuevo</button>
+          <button class="ghost small" id="pBlank" type="button">Lista en blanco</button>
+          <button class="ghost small danger" id="pDel" type="button">Eliminar</button>
+        </div>
+        <div class="mini">
+          <button class="ghost small" id="pExport" type="button">Exportar copia</button>
+          <button class="ghost small" id="pImport" type="button">Importar copia</button>
+          <input type="file" id="pFile" accept=".json,application/json" hidden>
+        </div>
+        <p class="pnote" id="pNote" role="status"></p>
+        <p class="help">Cada perfil guarda la lista de opciones, las acciones de VTube Studio y los sonidos o links de cada opción (la biblioteca de audios es compartida por todos los perfiles). Al cambiar de perfil, los contadores y las reglas de TikFinity y tus contadores de tiempo se quedan como están. Si quitas ganadoras de la lista, vuelve a tocar el perfil para recuperarla completa.</p>
+      </div>
+
+      <div class="panel">
+        <h2>Opciones</h2>
+        <textarea id="opts" spellcheck="false" placeholder="Escribe una opción por línea. Presiona Enter para separar."></textarea>
+        <div class="meta">
+          <span id="count">0 opciones</span>
+          <button class="link" id="clear" type="button">Borrar todo</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Vista previa</h2>
+        <div class="preview">
+          <div class="wheel">
+            <div class="disc"><canvas id="prevCanvas"></canvas></div>
+            <svg class="pointer"><use href="#pin"/></svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Ajustes</h2>
+        <label class="row"><span>Fondo de la ruleta</span>
+          <span class="ctl">
+            <input type="color" id="custom" value="#00ff00" hidden aria-label="Color personalizado">
+            <select id="key">
+              <option value="green">Verde chroma</option>
+              <option value="blue">Azul chroma</option>
+              <option value="custom">Otro color</option>
+            </select>
+          </span>
+        </label>
+        <label class="row"><span>Tamaño de la ruleta aquí</span>
+          <span class="ctl"><input type="range" id="size" min="360" max="720" step="10" value="560"><span class="out" id="sizeOut">560 px</span></span>
+        </label>
+        <label class="row"><span>Duración del giro</span>
+          <span class="ctl"><input type="range" id="dur" min="4" max="12" step="1" value="7"><span class="out" id="durOut">7 s</span></span>
+        </label>
+        <label class="row"><span>Ocultar la ruleta tras el resultado (segundos, 0 = nunca)</span>
+          <span class="ctl"><input type="number" id="auto" min="0" max="120" value="8"></span>
+        </label>
+        <label class="row"><span>Quitar la opción ganadora de la lista</span>
+          <span class="ctl"><input type="checkbox" id="remove"></span>
+        </label>
+      </div>
+
+      <div class="panel">
+        <h2>Sonido</h2>
+        <label class="row"><span>Sonido en esta ventana</span>
+          <span class="ctl"><input type="checkbox" id="sndCtl" checked></span>
+        </label>
+        <label class="row"><span>Sonido en la ventana del directo</span>
+          <span class="ctl"><input type="checkbox" id="sndPop" checked></span>
+        </label>
+        <label class="row"><span>Volumen</span>
+          <span class="ctl"><input type="range" id="vol" min="0" max="100" step="5" value="60"><span class="out" id="volOut">60%</span></span>
+        </label>
+        <div class="mini"><button class="ghost small" id="testSnd" type="button">Probar sonido</button></div>
+        <p class="help">Si juegas con las dos ventanas abiertas en la misma computadora, apaga el sonido en una para no oírlo doble.</p>
+      </div>
+    </section>
+
+    <section class="col-right">
+      <div class="panel stage-panel">
+        <div class="stage-head">
+          <h2>Zona del directo</h2>
+          <p class="hint">Recorta tu captura justo sobre el cuadro de color, o abre la ruleta en otra ventana y captura solo esa. El botón Spin queda fuera.</p>
+        </div>
+        <div class="stage-scroll">
+          <div class="stage" id="stage">
+            <div class="idle" id="idle">
+              <div class="idle-text" id="idleText"></div>
+              <div class="bar" id="idleBar" hidden><i id="idleFill"></i></div>
+            </div>
+            <div class="clayer" id="cLayer"><div class="cpos" data-p="top"></div><div class="cpos" data-p="center"></div><div class="cpos" data-p="bottom"></div></div>
+            <div class="wheel">
+              <div class="disc"><canvas id="mainCanvas"></canvas></div>
+              <div class="result" id="result" aria-live="polite">
+                <div class="ring"></div>
+                <span class="sp" style="left:22%;top:24%;animation-delay:0s">&#10022;</span>
+                <span class="sp" style="left:74%;top:20%;animation-delay:.7s">&#10022;</span>
+                <span class="sp" style="left:12%;top:56%;animation-delay:1.4s">&#10022;</span>
+                <span class="sp" style="left:84%;top:58%;animation-delay:2.1s">&#10022;</span>
+                <span class="sp" style="left:30%;top:80%;animation-delay:1s">&#10022;</span>
+                <span class="sp" style="left:68%;top:78%;animation-delay:1.9s">&#10022;</span>
+                <div class="card" id="card" data-size="l"><span id="cardText"></span><span class="by" id="cardBy"></span></div>
+              </div>
+              <svg class="pointer" id="mainPointer"><use href="#pin"/></svg>
+            </div>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="spin" id="spin" type="button">Spin</button>
+          <button class="ghost" id="hide" type="button">Ocultar ruleta</button>
+          <button class="ghost" id="popBtn" type="button">Abrir en otra ventana</button>
+        </div>
+        <p class="popmsg" id="popMsg"></p>
+        <div id="synBox"></div>
+      </div>
+
+      <div class="panel tik-panel">
+        <h2>TikTok con TikFinity</h2>
+        <p class="hint">Abre la app de TikFinity en esta misma computadora y conéctala a tu directo. Esta página escucha los regalos y gira sola cuando se cumplen tus reglas.</p>
+        <div class="status"><span class="dot" id="dot"></span><span id="tikStatus">Desconectado</span></div>
+
+        <h3>Conexión y límites generales</h3>
+        <div class="grid2">
+          <div>
+            <label class="row"><span>Conectar con TikFinity</span>
+              <span class="ctl"><input type="checkbox" id="tikOn"></span>
+            </label>
+            <label class="row"><span>Puerto</span>
+              <span class="ctl"><input type="number" id="tikPort" min="1" max="65535" value="21213"></span>
+            </label>
+            <label class="row"><span>Espera entre giros, para todos (segundos)</span>
+              <span class="ctl"><input type="number" id="tikCd" min="0" max="3600" value="0"></span>
+            </label>
+            <label class="row"><span>Espera entre giros de la misma persona (segundos)</span>
+              <span class="ctl"><input type="number" id="userCd" min="0" max="86400" value="0"></span>
+            </label>
+            <label class="row"><span>Máximo de giros por persona en este directo (0 = sin límite)</span>
+              <span class="ctl"><input type="number" id="userMax" min="0" max="1000" value="0"></span>
+            </label>
+            <label class="row"><span>Máximo de giros en cola</span>
+              <span class="ctl"><input type="number" id="maxQueue" min="1" max="500" value="50"></span>
+            </label>
+            <label class="row"><span>Al llegar a la meta</span>
+              <span class="ctl">
+                <select id="resetMode">
+                  <option value="sub">Restar la meta (lo que sobra se guarda y puede dar más giros)</option>
+                  <option value="zero">Reiniciar a cero (un solo giro)</option>
+                </select>
+              </span>
+            </label>
+            <label class="row"><span>Seguir contando mientras la ruleta gira o está en espera</span>
+              <span class="ctl"><input type="checkbox" id="tikCount" checked></span>
+            </label>
+            <label class="row"><span>Mostrar quién activó el giro</span>
+              <span class="ctl"><input type="checkbox" id="showBy"></span>
+            </label>
+            <label class="row stack"><span>Personas bloqueadas (nunca cuentan, separadas por coma)</span>
+              <input type="text" id="blockUsers" placeholder="usuario1, usuario2">
+            </label>
+          </div>
+
+          <div>
+            <h3 style="margin-top:0">Cuando la ruleta está oculta</h3>
+            <label class="row"><span>Mostrar en el cuadro</span>
+              <span class="ctl">
+                <select id="idleMode">
+                  <option value="none">Nada</option>
+                  <option value="text">Un texto</option>
+                  <option value="counter">Texto con contador</option>
+                </select>
+              </span>
+            </label>
+            <label class="row"><span>Dónde se muestra el texto</span>
+              <span class="ctl">
+                <select id="idlePos">
+                  <option value="tl">↖ Arriba a la izquierda</option>
+                  <option value="tc">↑ Arriba</option>
+                  <option value="tr">↗ Arriba a la derecha</option>
+                  <option value="ml">← Izquierda</option>
+                  <option value="mc" selected>• Centro</option>
+                  <option value="mr">→ Derecha</option>
+                  <option value="bl">↙ Abajo a la izquierda</option>
+                  <option value="bc">↓ Abajo</option>
+                  <option value="br">↘ Abajo a la derecha</option>
+                </select>
+              </span>
+            </label>
+            <label class="row stack"><span>Texto</span>
+              <input type="text" id="idleTpl" value="Faltan {faltan} monedas para girar">
+            </label>
+            <label class="row"><span>El contador muestra el progreso de</span>
+              <span class="ctl">
+                <select id="idleSrc">
+                  <option value="gift">Regalos</option>
+                  <option value="like">Likes</option>
+                  <option value="chat">Comentarios</option>
+                  <option value="cmd">Comando</option>
+                  <option value="follow">Seguidores</option>
+                  <option value="share">Compartidos</option>
+                  <option value="sub">Suscripciones</option>
+                </select>
+              </span>
+            </label>
+            <p class="help">Puedes usar {faltan}, {actual}, {meta}, {cola}, {total}, {cooldown} y {lider} (quien va ganando cuando se cuenta por persona). En "Texto con contador" también aparece una barra de progreso cuando se suma.</p>
+
+            <div class="stats">
+              <div><span>Contador</span><b id="poolOut">0</b> / <b id="metaOut">100</b></div>
+              <div><span>Total</span><b id="totalOut">0</b></div>
+              <div><span>En cola</span><b id="queueOut">0</b></div>
+              <div><span>Cooldown</span><b id="cdOut">listo</b></div>
+            </div>
+            <div class="mini">
+              <button class="ghost small" id="resetPool" type="button">Reiniciar todos los contadores</button>
+            </div>
+          </div>
+        </div>
+
+        <h3>Reglas para activar el giro</h3>
+        <p class="help" style="margin-top:0">Cada regla se enciende o se apaga por separado y puedes tener varias activas a la vez. Abre una para ajustarla.</p>
+        <div class="bulk">
+          <button class="ghost small" id="allOn" type="button">Activar todas</button>
+          <button class="ghost small" id="allOff" type="button">Apagar todas</button>
+        </div>
+        <div class="rules" id="rules"></div>
+
+        <h3>Probar sin estar en directo</h3>
+        <p class="help" style="margin-top:0">Simula un evento para ver cómo reaccionan tus reglas. El valor son las monedas, los likes o el texto del comentario (así pruebas tu comando).</p>
+        <div class="mini">
+          <select id="simType" aria-label="Tipo de evento">
+            <option value="gift">Regalo</option>
+            <option value="like">Likes</option>
+            <option value="chat">Comentario</option>
+            <option value="follow">Seguidor</option>
+            <option value="share">Compartido</option>
+            <option value="subscribe">Suscripción</option>
+          </select>
+          <input type="text" id="simUser" value="amiga1" style="width:120px" aria-label="Usuario de prueba">
+          <input type="text" id="simVal" value="100" style="width:120px" aria-label="Valor de prueba">
+          <input type="text" id="simGift" value="Rose" style="width:100px" aria-label="Nombre del regalo de prueba">
+          <select id="simRole" aria-label="Tipo de usuario de prueba">
+            <option value="none">Usuario normal</option>
+            <option value="follower">Seguidor</option>
+            <option value="sub">Suscriptor</option>
+            <option value="mod">Moderador</option>
+          </select>
+          <button class="ghost small" id="simBtn" type="button">Simular</button>
+        </div>
+
+        <details>
+          <summary>Registro de eventos</summary>
+          <p class="help">Aquí ves lo que llega de TikFinity. Si las monedas no cuadran, revisa los campos que aparecen en el primer regalo.</p>
+          <div class="log" id="log">Todavía no ha llegado nada.</div>
+        </details>
+      </div>
+
+      <div class="panel tabs-panel">
+        <h2>Al salir una opción</h2>
+        <div class="tabs" role="tablist" aria-label="Qué pasa cuando sale una opción">
+          <button class="tab" role="tab" id="tab-vts" type="button" aria-controls="pane-vts" aria-selected="true">🧍 VTube Studio</button>
+          <button class="tab" role="tab" id="tab-snd" type="button" aria-controls="pane-snd" aria-selected="false" tabindex="-1">🎧 Sonidos y links</button>
+          <button class="tab" role="tab" id="tab-cnt" type="button" aria-controls="pane-cnt" aria-selected="false" tabindex="-1">⏱ Contadores<small id="cTabN"></small></button>
+        </div>
+
+        <div class="tabpane vts-panel" id="pane-vts" role="tabpanel" aria-labelledby="tab-vts">
+        <p class="hint">Abre VTube Studio y activa «Iniciar API» (puerto 8001 por defecto). La primera vez te pedirá permiso dentro de VTube Studio. Cuando salga una opción de la ruleta, se ejecutan en orden las acciones que le asignes.</p>
+        <div class="status"><span class="dot" id="vDot"></span><span id="vStatus">Desconectado</span></div>
+        <div class="grid2">
+          <div>
+            <label class="row"><span>Conectar con VTube Studio</span><span class="ctl"><input type="checkbox" id="vOn"></span></label>
+            <label class="row"><span>Puerto</span><span class="ctl"><input type="number" id="vPort" min="1" max="65535" value="8001"></span></label>
+          </div>
+          <div>
+            <label class="row"><span>Ejecutar acciones cuando salga una opción</span><span class="ctl"><input type="checkbox" id="vAuto" checked></span></label>
+            <div class="mini"><button class="ghost small" id="vRefresh" type="button">Actualizar listas</button><button class="ghost small" id="vReset" type="button">Restaurar todo</button></div>
+          </div>
+        </div>
+        <h3>Qué hace cada opción</h3>
+        <label class="row stack"><span>Opción de la ruleta</span><select id="vOpt"></select></label>
+        <div id="vActs"></div>
+        <div class="mini" style="margin-top:6px"><select id="vType" aria-label="Tipo de acción"></select><button class="ghost small" id="vAdd" type="button">＋ Añadir acción</button><button class="ghost small" id="vTest" type="button">▶ Probar esta opción</button></div>
+        <details><summary>Registro de VTube Studio</summary><div class="log" id="vLog">Sin actividad.</div></details>
+        </div>
+
+        <div class="tabpane snd-panel" id="pane-snd" role="tabpanel" aria-labelledby="tab-snd" hidden>
+        <p class="hint">Cuando salga una opción puedes reproducir efectos de sonido, canciones o abrir links (YouTube incluido), con varias reproducciones por opción. Primero añade lo que quieras a la biblioteca y luego elige qué suena con cada opción, de forma fija o al azar. Todo se cierra solo al terminar para no gastar recursos.</p>
+        <div class="grid2">
+          <div>
+            <label class="row"><span>Reproducir cuando salga una opción</span><span class="ctl"><input type="checkbox" id="sAuto" checked></span></label>
+            <label class="row"><span>Volumen general</span><span class="ctl"><input type="range" id="sVol" min="0" max="100" value="80"></span></label>
+          </div>
+          <div>
+            <div class="mini"><button class="ghost small danger" id="sStop" type="button">■ Parar todo lo que suene</button></div>
+            <p class="help" id="sFileNote" style="margin-top:8px"></p>
+          </div>
+        </div>
+
+        <h3>Biblioteca</h3>
+        <div class="mini">
+          <select id="sKind" aria-label="Categoría de los audios nuevos">
+            <option value="auto">Detectar (corto = efecto, largo = canción)</option>
+            <option value="sfx">Efecto de sonido</option>
+            <option value="song">Canción</option>
+          </select>
+          <button class="ghost small" id="sAddFile" type="button">＋ Añadir archivos de audio</button>
+          <input type="file" id="sFile" accept="audio/*" multiple hidden>
+        </div>
+        <div class="mini" style="margin-top:8px">
+          <input type="text" id="sUrl" placeholder="Pega un link: YouTube, mp3, una página…" autocomplete="off" spellcheck="false" style="flex:1 1 230px;min-width:0">
+          <button class="ghost small" id="sAddLink" type="button">＋ Añadir link</button>
+        </div>
+        <p class="pnote" id="sNote" role="status"></p>
+        <div class="lib" id="sLib"></div>
+
+        <h3>Qué suena con cada opción</h3>
+        <label class="row stack"><span>Opción de la ruleta</span><select id="sOpt"></select></label>
+        <div id="sActs"></div>
+        <div class="mini" style="margin-top:6px"><button class="ghost small" id="sAdd" type="button">＋ Añadir reproducción</button><button class="ghost small" id="sTest" type="button">▶ Probar esta opción</button></div>
+        <details><summary>Registro de sonidos</summary><div class="log" id="sLog">Sin actividad.</div></details>
+        </div>
+
+        <div class="tabpane cnt-panel" id="pane-cnt" role="tabpanel" aria-labelledby="tab-cnt" hidden>
+        <p class="hint">Crea contadores que suben o bajan solos. Cada uno puede arrancar cuando salga una opción de la ruleta (cualquiera o solo las que elijas) o a mano, se muestra en el cuadro del directo y, al llegar a la meta, hace sonar algo: un sonido de la propia página o uno de tu biblioteca. Son independientes de los contadores de TikFinity.</p>
+        <div class="grid2">
+          <div>
+            <label class="row"><span>Activar contadores cuando salga una opción</span><span class="ctl"><input type="checkbox" id="cAuto" checked></span></label>
+          </div>
+          <div>
+            <div class="mini"><button class="ghost small" id="cAdd" type="button">＋ Nuevo contador</button><button class="ghost small danger" id="cStopAll" type="button">■ Parar todos</button></div>
+          </div>
+        </div>
+        <div class="clist" id="cList"></div>
+        <details><summary>Registro de contadores</summary><div class="log" id="cLog">Sin actividad.</div></details>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+<div class="sdock" id="sDock" aria-live="polite"></div>
+
+<footer class="foot">Luna</footer>
+
+<button class="gate" id="gate" type="button" hidden>Clic aquí para activar el sonido</button>
+
+<script>
+(function(){
+  const {setTimeout,setInterval,clearTimeout,clearInterval} = window.__W, requestAnimationFrame = window.__W.raf;
+  const $ = s => document.querySelector(s);
+  const IS_POPUP = location.hash === '#directo', IS_LIVE = /^#live(&|$)/.test(location.hash);
+  if(IS_POPUP || IS_LIVE) document.body.classList.add('directo');
+
+  const PALETTE = ['#d9c9ff','#f6a9d3','#b4ccff','#c3a8f5','#ffd0e8','#9f8ce6','#ecb9ff','#8fb0f5'];
+  const INK = '#2b2150';
+  const STORE = 'ruleta-de-sayler-v1';
+  const DEFAULT_TEXT = ['Cantar una canción','Dibujar lo que diga el chat','Reto sorpresa','Preguntas al chat','Jugar algo al azar','Baile'].join('\n');
+
+  const optsEl=$('#opts'), countEl=$('#count'), prevCanvas=$('#prevCanvas'), mainCanvas=$('#mainCanvas');
+  const stage=$('#stage'), result=$('#result'), card=$('#card'), cardText=$('#cardText');
+  const spinBtn=$('#spin'), hideBtn=$('#hide'), popBtn=$('#popBtn'), popMsg=$('#popMsg'), pointer=$('#mainPointer');
+  const keySel=$('#key'), customEl=$('#custom'), sizeEl=$('#size'), sizeOut=$('#sizeOut');
+  const durEl=$('#dur'), durOut=$('#durOut'), removeEl=$('#remove'), autoEl=$('#auto');
+  const sndCtl=$('#sndCtl'), sndPop=$('#sndPop'), vol=$('#vol'), volOut=$('#volOut'), testSnd=$('#testSnd'), gate=$('#gate');
+  const tikOn=$('#tikOn'), tikPort=$('#tikPort'), tikCd=$('#tikCd'), tikCount=$('#tikCount');
+  const userCd=$('#userCd'), userMax=$('#userMax'), maxQueue=$('#maxQueue'), resetMode=$('#resetMode'), showBy=$('#showBy'), blockUsers=$('#blockUsers'), idleSrc=$('#idleSrc'), cardBy=$('#cardBy');
+  
+  const idleMode=$('#idleMode'), idlePos=$('#idlePos'), idleTpl=$('#idleTpl'), idleEl=$('#idle'), idleText=$('#idleText'), idleBar=$('#idleBar'), idleFill=$('#idleFill');
+  const dot=$('#dot'), tikStatus=$('#tikStatus'), logEl=$('#log');
+  const poolOut=$('#poolOut'), metaOut=$('#metaOut'), totalOut=$('#totalOut'), queueOut=$('#queueOut'), cdOut=$('#cdOut');
+  const simBtn=$('#simBtn'), resetPool=$('#resetPool');
+
+  /* ---------- reglas de TikFinity (se generan aquí) ---------- */
+  const ROLE_OPTS = [['all','Cualquiera'],['follower','Seguidores en adelante'],['sub','Solo suscriptores'],['mod','Solo moderadores']];
+  const SCOPE_G = [['each','Un regalo suelto llega a la meta (no se acumula)'],['global','Sumar las monedas de todos'],['user','Sumar por persona (cada quien lleva su cuenta)']];
+  const SCOPE_N = [['global','Sumar entre todos'],['user','Sumar por persona (cada quien lleva su cuenta)']];
+  const MATCH_OPTS = [['start','El mensaje empieza con el comando'],['exact','El mensaje es exactamente el comando'],['contains','El mensaje contiene el comando']];
+  const esc = x => String(x).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  const rSel = (id,label,opts,v) => `<label class="row"><span>${label}</span><span class="ctl"><select id="${id}">${opts.map(o => `<option value="${o[0]}"${o[0]===v?' selected':''}>${o[1]}</option>`).join('')}</select></span></label>`;
+  const rNum = (id,label,min,max,v) => `<label class="row"><span>${label}</span><span class="ctl"><input type="number" id="${id}" min="${min}" max="${max}" value="${v}"></span></label>`;
+  const rChk = (id,label,v) => `<label class="row"><span>${label}</span><span class="ctl"><input type="checkbox" id="${id}"${v?' checked':''}></span></label>`;
+  const rTxt = (id,label,ph,v) => `<label class="row stack"><span>${label}</span><input type="text" id="${id}" placeholder="${esc(ph)}" value="${esc(v||'')}"></label>`;
+
+  const TRIGGERS = [
+    { id:'gift', icon:'🎁', name:'Regalos', unit:'monedas', on:true, scope:'each', meta:100,
+      extra:() => rTxt('giftFilter','Solo regalos con estos nombres (separados por coma, vacío = todos)','Rose, Corazón','')
+        + rNum('giftMin','Monedas mínimas por regalo (los más baratos no cuentan)',0,1000000,0)
+        + rChk('tikCombo','En regalos con combo, contar solo cuando termina',true) },
+    { id:'like', icon:'❤️', name:'Likes', unit:'likes', on:false, scope:'global', meta:500, extra:() => '' },
+    { id:'chat', icon:'💬', name:'Comentarios', unit:'comentarios', on:false, scope:'global', meta:10,
+      extra:() => rTxt('chatWord','Solo comentarios que contengan (varias palabras separadas por coma, vacío = todos)','giro, ruleta','')
+        + rNum('chatMin','Largo mínimo del comentario (letras)',0,500,0) },
+    { id:'cmd', icon:'⌨️', name:'Comando en el chat', unit:'usos del comando', on:false, scope:'global', meta:1,
+      extra:() => rTxt('cmdText','Comando','!girar','!girar')
+        + rSel('cmdMatch','Cómo se detecta',MATCH_OPTS,'start')
+        + rNum('cmdUserCd','Espera entre usos de la misma persona (segundos)',0,86400,0)
+        + rNum('cmdMax','Máximo de usos por persona (0 = sin límite)',0,1000,0) },
+    { id:'follow', icon:'➕', name:'Nuevos seguidores', unit:'seguidores', on:false, scope:'global', meta:1, extra:() => '' },
+    { id:'share', icon:'🔗', name:'Compartidos', unit:'compartidos', on:false, scope:'global', meta:5, extra:() => '' },
+    { id:'sub', icon:'⭐', name:'Suscripciones', unit:'suscripciones', on:false, scope:'global', meta:1, extra:() => '' }
+  ];
+  const TBY = {};
+  TRIGGERS.forEach(t => TBY[t.id] = t);
+
+  function buildRules(){
+    const box = $('#rules'), fields = {};
+    box.innerHTML = TRIGGERS.map(t => `
+      <details class="rule" id="r-${t.id}">
+        <summary><input type="checkbox" id="${t.id}On" aria-label="Activar ${t.name}"${t.on?' checked':''}><span class="nm">${t.icon} ${t.name}</span><span class="rsum" id="${t.id}Sum"></span></summary>
+        <div class="rbody">
+          ${rSel(t.id+'Scope','Cómo se cuenta', t.id === 'gift' ? SCOPE_G : SCOPE_N, t.scope)}
+          ${rNum(t.id+'Meta','Cuántos ' + t.unit + ' hacen falta',1,100000000,t.meta)}
+          ${rNum(t.id+'Spins','Giros que se ganan al llegar a la meta',1,20,1)}
+          ${rNum(t.id+'Cd','Espera propia de esta regla tras un giro (segundos)',0,86400,0)}
+          ${rSel(t.id+'Role','Quién puede contar',ROLE_OPTS,'all')}
+          ${rTxt(t.id+'Users','Solo estas personas (usuarios separados por coma, vacío = cualquiera)','usuario1, usuario2','')}
+          ${t.extra()}
+          <div class="mini"><button class="ghost small" type="button" data-reset="${t.id}">Reiniciar contador de esta regla</button></div>
+        </div>
+      </details>`).join('');
+    TRIGGERS.forEach(t => ['On','Scope','Meta','Spins','Cd','Role','Users'].forEach(k => fields[t.id + k] = document.getElementById(t.id + k)));
+    ['giftFilter','giftMin','tikCombo','chatWord','chatMin','cmdText','cmdMatch','cmdUserCd','cmdMax'].forEach(id => fields[id] = document.getElementById(id));
+    box.querySelectorAll('[data-reset]').forEach(b => b.addEventListener('click', () => resetTrigger(b.dataset.reset)));
+    return fields;
+  }
+  const RULE_FIELDS = buildRules();
+
+  /* ---------- estado ---------- */
+  let rot = 0, busy = false, shown = false, hideT = null, pendingRemove = null, kick = 0;
+  let soundOn = true, volume = .6, popupWin = null, popupOpts = [];
+  const st = { pools:{}, users:{}, totals:{}, pending:[], uses:{}, spinsBy:{}, trigCd:{}, userCdUntil:{}, cmdLast:{}, cooldownUntil:0 };
+
+  /* ---------- utilidades ---------- */
+  const mod = (a,n) => ((a % n) + n) % n;
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const buf = new Uint32Array(1);
+  function randFloat(){ crypto.getRandomValues(buf); return buf[0] / 4294967296; }
+  function randInt(n){
+    if(n <= 1) return 0;
+    const lim = Math.floor(4294967296 / n) * n;
+    do { crypto.getRandomValues(buf); } while(buf[0] >= lim);
+    return buf[0] % n;
+  }
+  const parse = () => optsEl.value.split('\n').map(s => s.trim()).filter(Boolean);
+  
+  const KEYS = { green:'#00ff00', blue:'#0000ff' };
+  const currentKey = () => keySel.value === 'custom' ? customEl.value : KEYS[keySel.value];
+
+  /* ---------- sonido (sintetizado, sin archivos) ---------- */
+  let actx = null, master = null, delayNode = null, noiseBuf = null, lastTick = 0, toneK = 1;
+  function audio(){
+    if(actx) return actx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return null;
+    actx = new AC();
+    master = actx.createGain(); master.gain.value = volume;
+    const comp = actx.createDynamicsCompressor();
+    master.connect(comp); comp.connect(actx.destination);
+    delayNode = actx.createDelay(1); delayNode.delayTime.value = .23;
+    const fb = actx.createGain(); fb.gain.value = .32;
+    const wet = actx.createGain(); wet.gain.value = .35;
+    delayNode.connect(fb); fb.connect(delayNode); delayNode.connect(wet); wet.connect(master);
+    const len = actx.sampleRate;
+    noiseBuf = actx.createBuffer(1, len, actx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for(let i=0;i<len;i++) d[i] = Math.random()*2 - 1;
+    return actx;
+  }
+  function unlock(){
+    const a = audio();
+    if(a && a.state !== 'running') a.resume().then(updateGate).catch(()=>{});
+  }
+  function updateGate(){
+    gate.hidden = !((IS_POPUP || IS_LIVE) && soundOn && actx && actx.state !== 'running');
+  }
+  function tone(freq, t0, dur, o){
+    o = o || {};
+    const a = actx, os = a.createOscillator(), g = a.createGain();
+    os.type = o.type || 'sine';
+    os.frequency.setValueAtTime(freq, t0);
+    const gain = Math.max(.0001, (o.gain || .2) * toneK), atk = o.attack || .005;
+    g.gain.setValueAtTime(.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain, t0 + atk);
+    g.gain.exponentialRampToValueAtTime(.0001, t0 + dur);
+    os.connect(g); g.connect(master);
+    if(o.send){ const s = a.createGain(); s.gain.value = o.send; g.connect(s); s.connect(delayNode); }
+    os.start(t0); os.stop(t0 + dur + .05);
+  }
+  function sfx(name, arg, force, k){
+    if(!soundOn && !force) return;
+    const a = audio();
+    if(!a || a.state !== 'running') return;
+    const t = a.currentTime + .01;
+    toneK = typeof k === 'number' ? Math.max(0, Math.min(1, k)) : 1;
+    switch(name){
+      case 'tick': {
+        const now = performance.now();
+        if(now - lastTick < 30) return;
+        lastTick = now;
+        tone(arg || 900, t, .05, {type:'triangle', gain:.15});
+        break;
+      }
+      case 'appear':
+        [659.25, 987.77, 1318.5].forEach((f,i) => tone(f, t + i*.12, 1.7, {gain:.07, attack:.5, send:.4}));
+        break;
+      case 'whoosh': {
+        const src = a.createBufferSource(); src.buffer = noiseBuf;
+        const bp = a.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.2;
+        bp.frequency.setValueAtTime(300, t); bp.frequency.exponentialRampToValueAtTime(3200, t + .7);
+        const g = a.createGain();
+        g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.12, t + .25); g.gain.exponentialRampToValueAtTime(.0001, t + .8);
+        src.connect(bp); bp.connect(g); g.connect(master);
+        src.start(t); src.stop(t + .9);
+        break;
+      }
+      case 'win':
+        [1046.5, 1318.5, 1568, 2093].forEach((f,i) => {
+          tone(f, t + i*.11, 1.8, {gain:.15, attack:.01, send:.5});
+          tone(f*2, t + i*.11, .9, {gain:.04, send:.3});
+        });
+        break;
+      case 'ding':
+        tone(1568, t, 1.6, {gain:.2, send:.3});
+        tone(2349, t + .02, 1, {gain:.06});
+        tone(3136, t, .6, {gain:.05, send:.2});
+        break;
+      case 'chime':
+        [987.77, 1318.5, 1760, 2093].forEach((f,i) => tone(f, t + i*.14, 1.3, {gain:.13, send:.45}));
+        break;
+      case 'sparkle':
+        for(let i=0;i<9;i++) tone(1500 + ((i*379) % 1400), t + i*.07, .45, {type:'triangle', gain:.08, send:.4});
+        break;
+      case 'fanfare':
+        [[523.25,0,.22],[659.25,.18,.22],[783.99,.36,.22],[1046.5,.54,1.1]].forEach(n => {
+          tone(n[0], t + n[1], n[2], {type:'triangle', gain:.17, send:.25});
+          tone(n[0]*1.5, t + n[1], n[2], {gain:.05});
+        });
+        break;
+      case 'alarm':
+        for(let i=0;i<6;i++) tone(i%2 ? 740 : 988, t + i*.2, .16, {type:'square', gain:.07});
+        break;
+      case 'buzzer':
+        tone(150, t, .7, {type:'sawtooth', gain:.14});
+        tone(155, t, .7, {type:'sawtooth', gain:.1});
+        break;
+      case 'coin':
+        tone(1318.5, t, .35, {gain:.11, send:.2});
+        tone(1760, t + .08, .5, {gain:.09, send:.3});
+        break;
+    }
+  }
+
+  /* ---------- dibujo de la ruleta ---------- */
+  function star4(ctx, cx, cy, R, r){
+    ctx.beginPath();
+    for(let k=0;k<8;k++){
+      const a = -Math.PI/2 + k*Math.PI/4;
+      const rad = k%2===0 ? R : r;
+      const x = cx + Math.cos(a)*rad, y = cy + Math.sin(a)*rad;
+      k===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+    }
+    ctx.closePath();
+  }
+  function colorFor(i,n){
+    let c = i % PALETTE.length;
+    if(i === n-1 && n > 1 && c === 0) c = 3;
+    return PALETTE[c];
+  }
+  function drawWheel(canvas, opts){
+    const S = 900, c = S/2, TAU = Math.PI*2;
+    if(canvas.width !== S){ canvas.width = S; canvas.height = S; }
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0,0,S,S);
+
+    const g = ctx.createLinearGradient(0,0,S,S);
+    g.addColorStop(0,'#e9dcff'); g.addColorStop(.35,'#b79ee8'); g.addColorStop(.7,'#f0a8d2'); g.addColorStop(1,'#d9c9ff');
+    ctx.beginPath(); ctx.arc(c,c,448,0,TAU); ctx.fillStyle = g; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.9)';
+    ctx.beginPath(); ctx.arc(c,c,447,0,TAU); ctx.stroke();
+    ctx.lineWidth = 8; ctx.strokeStyle = 'rgba(95,70,160,.5)';
+    ctx.beginPath(); ctx.arc(c,c,404,0,TAU); ctx.stroke();
+
+    for(let k=0;k<32;k++){
+      const a = k/32*TAU;
+      ctx.beginPath();
+      ctx.arc(c+Math.cos(a)*427, c+Math.sin(a)*427, 6.5, 0, TAU);
+      ctx.shadowColor = 'rgba(255,255,255,.95)'; ctx.shadowBlur = 10;
+      ctx.fillStyle = k%2 ? '#ffffff' : '#ff8fc6';
+      ctx.fill();
+      ctx.shadowBlur = 0;
+      ctx.lineWidth = 1.5; ctx.strokeStyle = 'rgba(120,90,180,.45)'; ctx.stroke();
+    }
+
+    const n = opts.length, R = 400;
+    if(n === 0){
+      ctx.beginPath(); ctx.arc(c,c,R,0,TAU); ctx.fillStyle = 'rgba(217,201,255,.6)'; ctx.fill();
+      ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = '600 40px Quicksand, "Segoe UI", system-ui, sans-serif';
+      ctx.fillText('Agrega opciones', c, c - 130);
+    } else {
+      const seg = TAU / n;
+      for(let i=0;i<n;i++){
+        const a0 = -Math.PI/2 + i*seg;
+        ctx.beginPath(); ctx.moveTo(c,c); ctx.arc(c,c,R,a0,a0+seg); ctx.closePath();
+        ctx.fillStyle = colorFor(i,n); ctx.fill();
+      }
+      const rg = ctx.createRadialGradient(c,c,40,c,c,R);
+      rg.addColorStop(0,'rgba(255,255,255,.38)'); rg.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.beginPath(); ctx.arc(c,c,R,0,TAU); ctx.fillStyle = rg; ctx.fill();
+      if(n > 1){
+        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(255,255,255,.85)';
+        for(let i=0;i<n;i++){
+          const a0 = -Math.PI/2 + i*seg;
+          ctx.beginPath(); ctx.moveTo(c,c); ctx.lineTo(c+Math.cos(a0)*R, c+Math.sin(a0)*R); ctx.stroke();
+        }
+      }
+      ctx.textBaseline = 'middle'; ctx.textAlign = 'right'; ctx.fillStyle = INK;
+      const maxW = 268;
+      const face = px => `600 ${px}px Quicksand, "Segoe UI", system-ui, sans-serif`;
+      for(let i=0;i<n;i++){
+        const mid = -Math.PI/2 + (i+.5)*seg;
+        let fs = Math.min(54, 2*Math.sin(Math.min(seg,Math.PI)/2)*300*.5);
+        fs = Math.max(fs, 10);
+        let t = opts[i];
+        ctx.font = face(fs);
+        while(fs > 12 && ctx.measureText(t).width > maxW){ fs -= 2; ctx.font = face(fs); }
+        if(ctx.measureText(t).width > maxW){
+          while(t.length > 1 && ctx.measureText(t + '…').width > maxW) t = t.slice(0,-1);
+          t += '…';
+        }
+        ctx.save(); ctx.translate(c,c); ctx.rotate(mid);
+        ctx.fillText(t, 376, 0);
+        ctx.restore();
+      }
+    }
+
+    const hg = ctx.createRadialGradient(c-16,c-16,6,c,c,84);
+    hg.addColorStop(0,'#ffffff'); hg.addColorStop(1,'#cdb8ff');
+    ctx.beginPath(); ctx.arc(c,c,84,0,TAU); ctx.fillStyle = hg; ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = '#ffffff'; ctx.stroke();
+    const ig = ctx.createRadialGradient(c,c,0,c,c,62);
+    ig.addColorStop(0,'#4a3b86'); ig.addColorStop(1,'#241d4d');
+    ctx.beginPath(); ctx.arc(c,c,62,0,TAU); ctx.fillStyle = ig; ctx.fill();
+    star4(ctx,c,c,34,9); ctx.fillStyle = '#fff6ff'; ctx.shadowColor = 'rgba(255,200,235,.9)'; ctx.shadowBlur = 14; ctx.fill();
+    ctx.shadowBlur = 0;
+  }
+
+  function renderPreview(){
+    const opts = parse();
+    countEl.textContent = opts.length === 1 ? '1 opción' : opts.length + ' opciones';
+    drawWheel(prevCanvas, opts);
+    if(!busy) drawWheel(mainCanvas, opts);
+    broadcastSync();
+  }
+
+  /* ---------- mensajes entre la ventana de control y la del directo ---------- */
+  let bc = null;
+  try{ bc = new BroadcastChannel('ruleta-de-sayler'); bc.onmessage = e => handle(e.data); }catch(e){}
+  window.addEventListener('message', e => handle(e.data));
+  const seen = new Set();
+
+  function send(msg){
+    msg.__rs = 1; msg.id = Math.random().toString(36).slice(2);
+    if(bc){ try{ bc.postMessage(msg); }catch(e){} }
+    if(IS_POPUP){ try{ if(window.opener) window.opener.postMessage(msg,'*'); }catch(e){} }
+    else if(popupWin && !popupWin.closed){ try{ popupWin.postMessage(msg,'*'); }catch(e){} }
+  }
+  function syncState(){
+    return { opts: parse(), key: currentKey(), sound: sndPop.checked, vol: +vol.value/100 };
+  }
+  let syncT = null;
+  function broadcastSync(now){
+    if(IS_POPUP) return;
+    clearTimeout(syncT);
+    const f = () => send({type:'sync', s: syncState()});
+    now ? f() : (syncT = setTimeout(f, 150));
+  }
+  let gotSync = false;
+  function applySync(s){
+    gotSync = true;
+    popupOpts = s.opts || [];
+    document.documentElement.style.setProperty('--key', s.key);
+    soundOn = !!s.sound; volume = s.vol; if(master) master.gain.value = volume;
+    if(!busy) drawWheel(mainCanvas, popupOpts);
+    updateGate();
+  }
+  function handle(m){
+    if(!m || !m.__rs || seen.has(m.id)) return;
+    seen.add(m.id);
+    if(seen.size > 80) seen.delete(seen.values().next().value);
+    if(IS_POPUP){
+      switch(m.type){
+        case 'sync': applySync(m.s); break;
+        case 'spin': if(!busy) runSpin(m.p); break;
+        case 'hide': hideWheel(); break;
+        case 'idle': applyIdle(m.i); break;
+        case 'sfx': sfx(m.name, m.arg, false, m.k); break;
+        case 'cnt': renderCnt(m.list || []); break;
+      }
+    } else if(m.type === 'hello'){
+      broadcastSync(true); pushIdle(true); pushCnt(true);
+    }
+  }
+
+  /* ---------- ajustes ---------- */
+  const FIELDS = Object.assign({}, RULE_FIELDS, {
+    key:keySel, custom:customEl, size:sizeEl, dur:durEl, auto:autoEl, remove:removeEl,
+    sndCtl, sndPop, vol, tikOn, tikPort, tikCd, tikCount, userCd, userMax, maxQueue, resetMode, showBy, blockUsers, idleMode, idlePos, idleTpl, idleSrc
+  });
+  function applySettings(){
+    const color = currentKey();
+    document.documentElement.style.setProperty('--key', color);
+    customEl.hidden = keySel.value !== 'custom';
+    if(!IS_POPUP && !IS_LIVE) stage.style.setProperty('--s', sizeEl.value + 'px');
+    sizeOut.textContent = sizeEl.value + ' px';
+    durOut.textContent = durEl.value + ' s';
+    volOut.textContent = vol.value + '%';
+    if(!IS_POPUP){
+      soundOn = sndCtl.checked; volume = +vol.value/100;
+      if(master) master.gain.value = volume;
+    }
+    broadcastSync();
+  }
+  function save(){
+    if(IS_POPUP) return;
+    try{
+      const d = { text: optsEl.value, st: { pools:st.pools, users:st.users, totals:st.totals, pending:st.pending, uses:st.uses, spinsBy:st.spinsBy } };
+      for(const k in FIELDS){ const el = FIELDS[k]; d[k] = el.type === 'checkbox' ? el.checked : el.value; }
+      d.vts = vData();
+      localStorage.setItem(STORE, JSON.stringify(d));
+      if(!IS_LIVE && window.SaylerSync) SaylerSync.changed();
+    }catch(e){}
+  }
+  function load(){
+    let d = null;
+    try{ d = JSON.parse(localStorage.getItem(STORE)); }catch(e){}
+    optsEl.value = d && typeof d.text === 'string' ? d.text : DEFAULT_TEXT;
+    vtsLoad(d && d.vts);
+    if(d){
+      for(const k in FIELDS){
+        if(!(k in d)) continue;
+        const el = FIELDS[k];
+        if(el.type === 'checkbox') el.checked = !!d[k]; else el.value = d[k];
+      }
+      if(d.tikMeta != null && d.giftMeta == null) RULE_FIELDS.giftMeta.value = d.tikMeta;
+      if(d.tikMode && d.giftScope == null) RULE_FIELDS.giftScope.value = d.tikMode === 'acc' ? 'global' : 'each';
+      if(d.tikFilter != null && d.giftFilter == null) RULE_FIELDS.giftFilter.value = d.tikFilter;
+      if(d.st){
+        const q = d.st;
+        st.pools = q.pools || {}; st.users = q.users || {}; st.totals = q.totals || {};
+        st.uses = q.uses || {}; st.spinsBy = q.spinsBy || {};
+        st.pending = Array.isArray(q.pending) ? q.pending : [];
+        if(q.pool && st.pools.gift == null) st.pools.gift = +q.pool || 0;
+      }
+    }
+  }
+
+  /* ---------- animación del giro (la usan las dos ventanas) ---------- */
+  function setKick(v){ pointer.style.transform = `translateX(-50%) rotate(${v}deg)`; }
+  function settleKick(){
+    kick *= .78; setKick(kick);
+    if(Math.abs(kick) > .2) requestAnimationFrame(settleKick); else { kick = 0; setKick(0); }
+  }
+  function sizeFor(t){
+    const l = t.length;
+    return l <= 7 ? 'xl' : l <= 14 ? 'l' : l <= 28 ? 'm' : 's';
+  }
+  function applyPendingRemove(){
+    if(pendingRemove === null) return;
+    const lines = optsEl.value.split('\n');
+    const i = lines.findIndex(l => l.trim() === pendingRemove);
+    if(i >= 0){ lines.splice(i,1); optsEl.value = lines.join('\n'); save(); }
+    pendingRemove = null;
+    renderPreview();
+  }
+  function hideWheel(){
+    if(busy) return;
+    clearTimeout(hideT);
+    result.classList.remove('show');
+    stage.classList.remove('on');
+    shown = false;
+    if(!IS_POPUP) setTimeout(() => { if(!shown && !busy) applyPendingRemove(); }, 1600);
+  }
+
+  async function runSpin(p){
+    busy = true; spinBtn.disabled = true;
+    clearTimeout(hideT);
+    result.classList.remove('show');
+    drawWheel(mainCanvas, p.opts);
+    stage.classList.add('on');
+    if(!shown){ shown = true; sfx('appear'); await sleep(1600); } else { await sleep(500); }
+    sfx('whoosh');
+
+    const n = p.opts.length, seg = 360 / n;
+    const target = (p.w + p.off) * seg;
+    const cur = mod(rot, 360);
+    const delta = mod(-target - cur, 360) + 360 * p.extra;
+    const from = rot, dur = p.dur * 1000;
+    let last = Math.floor(mod(-rot,360) / seg);
+    const t0 = performance.now();
+
+    await new Promise(res => {
+      function frame(now){
+        const pr = Math.min((now - t0) / dur, 1);
+        const e = 1 - Math.pow(1 - pr, 4);
+        rot = from + delta * e;
+        mainCanvas.style.transform = `rotate(${rot}deg)`;
+        const idx = Math.floor(mod(-rot,360) / seg);
+        if(n > 1 && idx !== last){
+          kick = -18; last = idx;
+          sfx('tick', (1250 - 520*pr) * (.98 + Math.random()*.04));
+        } else { kick *= .86; }
+        setKick(kick);
+        if(pr < 1) requestAnimationFrame(frame); else res();
+      }
+      requestAnimationFrame(frame);
+    });
+
+    rot = mod(rot, 360);
+    mainCanvas.style.transform = `rotate(${rot}deg)`;
+    settleKick();
+
+    await sleep(350);
+    cardText.textContent = p.opts[p.w];
+    cardBy.textContent = p.by ? 'activado por ' + p.by : '';
+    card.dataset.size = sizeFor(p.opts[p.w]);
+    result.classList.add('show');
+    sfx('win');
+    if(!IS_POPUP){ vtsRun(p.opts[p.w]); sndRun(p.opts[p.w]); cntFire(p.opts[p.w]); }
+    if(!IS_POPUP){
+      if(removeEl.checked) pendingRemove = p.opts[p.w];
+      st.cooldownUntil = Date.now() + Math.max(0, +tikCd.value || 0) * 1000;
+    }
+
+    await sleep(900);
+    busy = false; spinBtn.disabled = false;
+    if(p.auto > 0) hideT = setTimeout(hideWheel, p.auto * 1000);
+  }
+
+  function spin(by, manual){
+    if(IS_POPUP || busy) return;
+    applyPendingRemove();
+    const opts = parse();
+    if(!opts.length){
+      optsEl.classList.remove('nudge'); void optsEl.offsetWidth; optsEl.classList.add('nudge');
+      optsEl.focus();
+      return;
+    }
+    const p = { opts, w: randInt(opts.length), off: .12 + randFloat()*.76, extra: 5 + randInt(3), dur: +durEl.value, auto: +autoEl.value, by: (showBy.checked && by) ? by : '' };
+    send({type:'spin', p});
+    if(manual && !IS_LIVE && window.SaylerSync) SaylerSync.cmd('spin', p);
+    runSpin(p);
+  }
+
+  /* ---------- motor de reglas ---------- */
+  const eN = (id, d) => { const v = parseFloat(document.getElementById(id).value); return isFinite(v) ? v : d; };
+  const eC = id => document.getElementById(id).checked;
+  const eS = id => document.getElementById(id).value;
+  const metaOf = id => Math.max(1, Math.floor(eN(id + 'Meta', 1)));
+  const splitList = x => String(x || '').toLowerCase().split(/[,;\n]+/).map(v => v.trim().replace(/^@/, '')).filter(Boolean);
+  const userKey = d => String(d.uniqueId || d.userId || d.nickname || 'anon').toLowerCase().replace(/^@/, '');
+  const userName = d => String(d.nickname || d.uniqueId || 'alguien');
+  function roleOk(role, d){
+    const mod = !!(d.isModerator || d.isMod), sub = !!(d.isSubscriber || d.isSub);
+    const fol = (+d.followRole || 0) >= 1 || !!d.isFollower;
+    if(role === 'follower') return fol || sub || mod;
+    if(role === 'sub') return sub;
+    if(role === 'mod') return mod;
+    return true;
+  }
+
+  function blocked(){
+    return busy || Date.now() < st.cooldownUntil || (+autoEl.value > 0 && shown);
+  }
+  function processQueue(){
+    if(IS_POPUP || busy) return;
+    if(Date.now() < st.cooldownUntil) return;
+    if(+autoEl.value > 0 && shown) return;
+    if(!st.pending.length || !parse().length) return;
+    const by = st.pending.shift();
+    save(); spin(by);
+    updateStats(); pushIdle();
+  }
+
+  // cuenta un evento para una regla; devuelve true si el evento sí contó
+  function feed(t, d, amount){
+    const id = t.id;
+    if(!eC(id + 'On')) return false;
+    const user = userKey(d), name = userName(d);
+    const quiet = id === 'chat' || id === 'like';
+    const drop = why => { if(!quiet) pushLog(t.icon + ' ' + t.name + ' · ' + name + ' no cuenta: ' + why); return false; };
+
+    if(!roleOk(eS(id + 'Role'), d)) return drop('no cumple el tipo de usuario');
+    const only = splitList(eS(id + 'Users'));
+    if(only.length && !only.includes(user)) return drop('no está en la lista de personas');
+    if(Date.now() < (st.trigCd[id] || 0)) return drop('la regla está en espera');
+    if(blocked() && !eC('tikCount')) return drop('la ruleta está ocupada');
+
+    if(id === 'cmd'){
+      const uses = st.uses.cmd || (st.uses.cmd = {});
+      const max = eN('cmdMax', 0);
+      if(max > 0 && (uses[user] || 0) >= max) return drop('llegó al máximo de usos');
+      const cdu = eN('cmdUserCd', 0) * 1000;
+      if(cdu > 0 && Date.now() - (st.cmdLast[user] || 0) < cdu) return drop('debe esperar para repetir el comando');
+      st.cmdLast[user] = Date.now();
+      uses[user] = (uses[user] || 0) + 1;
+    }
+
+    const meta = metaOf(id), scope = eS(id + 'Scope');
+    st.totals[id] = (st.totals[id] || 0) + amount;
+    let reached = 0;
+    if(scope === 'each'){
+      if(amount >= meta) reached = 1;
+    } else {
+      let store, key;
+      if(scope === 'user'){ store = st.users[id] || (st.users[id] = {}); key = user; }
+      else { store = st.pools; key = id; }
+      store[key] = (store[key] || 0) + amount;
+      if(store[key] >= meta){
+        if(eS('resetMode') === 'sub'){ reached = Math.floor(store[key] / meta); store[key] -= reached * meta; }
+        else { reached = 1; store[key] = 0; }
+      }
+    }
+
+    if(reached > 0){
+      const n = reached * Math.max(1, Math.floor(eN(id + 'Spins', 1)));
+      const maxU = eN('userMax', 0), maxQ = Math.max(1, eN('maxQueue', 50)), ucd = eN('userCd', 0) * 1000;
+      let added = 0;
+      if(Date.now() < (st.userCdUntil[user] || 0)){
+        drop('esa persona debe esperar entre giros');
+      } else {
+        for(let i = 0; i < n; i++){
+          if(maxU > 0 && (st.spinsBy[user] || 0) >= maxU){ drop('llegó al máximo de giros por persona'); break; }
+          if(st.pending.length >= maxQ){ drop('la cola está llena'); break; }
+          st.pending.push(name);
+          st.spinsBy[user] = (st.spinsBy[user] || 0) + 1;
+          added++;
+        }
+        if(added && ucd > 0) st.userCdUntil[user] = Date.now() + ucd;
+      }
+      if(added){
+        const cd = eN(id + 'Cd', 0) * 1000;
+        if(cd > 0) st.trigCd[id] = Date.now() + cd;
+        pushLog('🎯 ' + t.name + ' · ' + name + ' gana ' + added + (added === 1 ? ' giro' : ' giros'));
+      }
+    }
+    save(); processQueue(); updateStats(); pushIdle();
+    return true;
+  }
+
+  function resetTrigger(id){
+    delete st.pools[id]; delete st.users[id]; delete st.totals[id]; delete st.uses[id]; delete st.trigCd[id];
+    save(); updateStats(); pushIdle(true);
+  }
+  function resetCounters(){
+    st.pools = {}; st.users = {}; st.totals = {}; st.pending = []; st.uses = {}; st.spinsBy = {};
+    st.trigCd = {}; st.userCdUntil = {}; st.cmdLast = {};
+    save(); updateStats(); pushIdle(true);
+  }
+  function setAll(v){
+    TRIGGERS.forEach(t => { document.getElementById(t.id + 'On').checked = v; });
+    save(); updateStats(); pushIdle();
+  }
+  $('#allOn').addEventListener('click', () => setAll(true));
+  $('#allOff').addEventListener('click', () => setAll(false));
+
+  function simulate(){
+    const type = eS('simType'), role = eS('simRole'), val = eS('simVal').trim();
+    const user = (eS('simUser').trim() || 'prueba').replace(/^@/, '');
+    const d = { uniqueId:user, nickname:user, followRole: role === 'follower' ? 1 : 0, isSubscriber: role === 'sub', isModerator: role === 'mod' };
+    if(type === 'gift') Object.assign(d, { giftName: eS('simGift').trim() || 'Rose', diamondCount: Math.max(1, Math.floor(+val || 100)), repeatCount:1, giftType:0, repeatEnd:true });
+    else if(type === 'like') d.likeCount = Math.max(1, Math.floor(+val || 15));
+    else if(type === 'chat') d.comment = val || 'hola';
+    if(!IS_LIVE && window.SaylerSync) SaylerSync.cmd('sim', { event:type, data:d });
+    onTikEvent({ event:type, data:d });
+  }
+
+  /* ---------- mensaje cuando la ruleta está oculta ---------- */
+  function srcInfo(){
+    const id = eS('idleSrc') || 'gift', meta = metaOf(id), scope = eS(id + 'Scope');
+    let actual = 0, leader = '';
+    if(scope === 'global') actual = st.pools[id] || 0;
+    else if(scope === 'user'){
+      const u = st.users[id] || {};
+      for(const k in u) if(u[k] > actual){ actual = u[k]; leader = k; }
+    }
+    return { id, meta, scope, actual, leader };
+  }
+  function computeIdle(){
+    const s = srcInfo();
+    const cd = Math.max(0, Math.ceil((st.cooldownUntil - Date.now()) / 1000));
+    const vals = {
+      faltan: s.scope === 'each' ? s.meta : Math.max(0, s.meta - s.actual),
+      actual: s.actual, meta: s.meta, cola: st.pending.length,
+      total: st.totals[s.id] || 0, cooldown: cd, lider: s.leader || '—'
+    };
+    const text = (idleTpl.value || '').replace(/\{(faltan|actual|meta|cola|total|cooldown|lider)\}/g, (_, k) => vals[k]);
+    const mode = idleMode.value;
+    return {
+      show: mode !== 'none' && text.trim() !== '',
+      text,
+      pos: idlePos.value || 'mc',
+      bar: mode === 'counter' && s.scope !== 'each',
+      progress: Math.min(100, s.actual / s.meta * 100)
+    };
+  }
+  function applyIdle(i){
+    idleEl.classList.toggle('show', !!i.show);
+    idleEl.dataset.pos = i.pos || 'mc';
+    idleText.textContent = i.text;
+    idleBar.hidden = !i.bar;
+    idleFill.style.width = i.progress + '%';
+  }
+  let lastIdle = '';
+  function pushIdle(force){
+    if(IS_POPUP) return;
+    const i = computeIdle(), j = JSON.stringify(i);
+    applyIdle(i);
+    if(force || j !== lastIdle){ lastIdle = j; send({type:'idle', i}); }
+  }
+  function refreshRuleUI(){
+    TRIGGERS.forEach(t => {
+      const on = eC(t.id + 'On'), sc = eS(t.id + 'Scope'), m = metaOf(t.id);
+      const box = document.getElementById('r-' + t.id);
+      if(box) box.classList.toggle('off', !on);
+      document.getElementById(t.id + 'Sum').textContent = !on ? 'apagada'
+        : sc === 'each' ? 'uno solo de ' + m + '+ ' + t.unit
+        : sc === 'user' ? m + ' ' + t.unit + ' por persona'
+        : m + ' ' + t.unit + ' entre todos';
+    });
+  }
+  function updateStats(){
+    const s = srcInfo();
+    poolOut.textContent = s.scope === 'each' ? '—' : s.actual;
+    metaOut.textContent = s.meta;
+    totalOut.textContent = st.totals[s.id] || 0;
+    queueOut.textContent = st.pending.length;
+    const cd = Math.max(0, Math.ceil((st.cooldownUntil - Date.now()) / 1000));
+    cdOut.textContent = cd > 0 ? cd + ' s' : 'listo';
+    refreshRuleUI();
+  }
+
+  /* ---------- conexión con TikFinity ---------- */
+  let ws = null, wsTimer = null; const loggedKeys = {};
+  const logLines = [];
+  function pushLog(line){
+    logLines.push(new Date().toLocaleTimeString() + '  ' + line);
+    if(logLines.length > 14) logLines.shift();
+    logEl.textContent = logLines.join('\n');
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function setStatus(kind){
+    dot.className = 'dot ' + (kind === 'on' ? 'on' : kind === 'connecting' ? 'connecting' : kind === 'retry' ? 'retry' : '');
+    tikStatus.textContent = {
+      off: 'Desconectado',
+      connecting: 'Conectando…',
+      on: 'Conectado a TikFinity',
+      retry: 'No encuentro TikFinity. Reintentando…'
+    }[kind] || '';
+  }
+  function giftCoins(d){
+    const rc = Math.max(1, +d.repeatCount || 1);
+    if(d.diamondCount != null) return (+d.diamondCount || 0) * rc;
+    if(d.coins != null) return +d.coins || 0;
+    if(d.diamonds != null) return +d.diamonds || 0;
+    return 0;
+  }
+  function onTikEvent(m){
+    if(!m || !m.event) return;
+    const ev = String(m.event), d = m.data || {};
+    if(ev === 'config'){ pushLog('config recibida de TikFinity'); return; }
+    let kind = ev;
+    if(kind === 'comment') kind = 'chat';
+    if(kind === 'subscribe') kind = 'sub';
+    if(kind === 'social'){
+      const ty = String(d.displayType || '').toLowerCase();
+      kind = ty.includes('follow') ? 'follow' : ty.includes('share') ? 'share' : '';
+    }
+    if(!['gift','like','chat','follow','share','sub'].includes(kind)) return;
+    if(!loggedKeys[kind]){ loggedKeys[kind] = true; pushLog('Campos de ' + kind + ': ' + Object.keys(d).join(', ')); }
+
+    const user = userKey(d);
+    if(splitList(eS('blockUsers')).includes(user)){
+      if(kind !== 'chat' && kind !== 'like') pushLog('· ' + userName(d) + ' está bloqueado, se ignora');
+      return;
+    }
+
+    if(kind === 'gift'){
+      const gname = String(d.giftName || ''), coins = giftCoins(d);
+      const streaking = +d.giftType === 1 && d.repeatEnd === false;
+      const words = splitList(eS('giftFilter'));
+      let note = '';
+      if(eC('tikCombo') && streaking) note = ' (combo en curso, no cuenta aún)';
+      else if(words.length && !words.some(w => gname.toLowerCase().includes(w))) note = ' (no coincide con el filtro)';
+      else if(coins < eN('giftMin', 0)) note = ' (menos del mínimo)';
+      pushLog('regalo · ' + userName(d) + ' · ' + (gname || '?') + ' · ' + coins + ' monedas' + note);
+      if(note || !(coins > 0)) return;
+      if(feed(TBY.gift, d, coins)){ sfx('coin'); send({type:'sfx', name:'coin'}); }
+    } else if(kind === 'like'){
+      feed(TBY.like, d, Math.max(1, Math.floor(+d.likeCount || 1)));
+    } else if(kind === 'chat'){
+      const text = String(d.comment || d.text || '').trim();
+      if(!text) return;
+      const low = text.toLowerCase();
+      const words = splitList(eS('chatWord'));
+      if(eC('chatOn') && text.length >= eN('chatMin', 0) && (!words.length || words.some(w => low.includes(w)))) feed(TBY.chat, d, 1);
+      if(eC('cmdOn')){
+        const cmd = eS('cmdText').trim().toLowerCase(), mode = eS('cmdMatch');
+        const ok = cmd && (mode === 'exact' ? low === cmd : mode === 'contains' ? low.includes(cmd) : low.startsWith(cmd));
+        if(ok){ pushLog('comando · ' + userName(d) + ' · ' + text); feed(TBY.cmd, d, 1); }
+      }
+    } else {
+      pushLog(TBY[kind].icon + ' ' + TBY[kind].name + ' · ' + userName(d));
+      feed(TBY[kind], d, 1);
+    }
+  }
+  function connectTik(){
+    clearTimeout(wsTimer);
+    if(ws){ try{ ws.onclose = null; ws.close(); }catch(e){} ws = null; }
+    if(!tikOn.checked){ setStatus('off'); return; }
+    setStatus('connecting');
+    try{
+      ws = new WebSocket('ws://127.0.0.1:' + (+tikPort.value || 21213) + '/');
+    }catch(e){
+      setStatus('retry'); wsTimer = setTimeout(connectTik, 3000); return;
+    }
+    ws.onopen = () => setStatus('on');
+    ws.onmessage = ev => { let m; try{ m = JSON.parse(ev.data); }catch(e){ return; } onTikEvent(m); };
+    ws.onclose = () => { setStatus('retry'); wsTimer = setTimeout(connectTik, 3000); };
+    ws.onerror = () => {};
+  }
+
+  /* ---------- eventos de la interfaz ---------- */
+  optsEl.addEventListener('input', () => { renderPreview(); save(); vtsOpts(); });
+  $('#clear').addEventListener('click', () => { optsEl.value = ''; renderPreview(); save(); vtsOpts(); optsEl.focus(); });
+  Object.keys(FIELDS).forEach(k => {
+    const el = FIELDS[k];
+    el.addEventListener('input', () => {
+      applySettings(); save();
+      if(k === 'tikOn' || k === 'tikPort') connectTik();
+      updateStats(); pushIdle();
+    });
+  });
+  spinBtn.addEventListener('click', () => spin(undefined, true));
+  hideBtn.addEventListener('click', () => { send({type:'hide'}); if(!IS_LIVE && window.SaylerSync) SaylerSync.cmd('hide'); hideWheel(); });
+  popBtn.addEventListener('click', () => {
+    popupWin = window.open(location.href.split('#')[0] + '#directo', 'ruletaDirecto', 'popup=yes,width=720,height=720');
+    if(!popupWin){ popMsg.textContent = 'El navegador bloqueó la ventana. Permite las ventanas emergentes para esta página.'; return; }
+    popMsg.textContent = 'Ventana abierta. Haz clic una vez dentro de ella para activar el sonido y captúrala en tu stream.';
+    setTimeout(() => { broadcastSync(true); pushIdle(true); }, 900);
+  });
+  testSnd.addEventListener('click', () => {
+    unlock();
+    setTimeout(() => { sfx('tick', 1100, true); setTimeout(() => sfx('coin', 0, true), 150); setTimeout(() => sfx('win', 0, true), 450); }, 80);
+  });
+  simBtn.addEventListener('click', simulate);
+  resetPool.addEventListener('click', () => {
+    resetCounters();
+  });
+  gate.addEventListener('click', unlock);
+  ['pointerdown','keydown','touchstart'].forEach(ev => window.addEventListener(ev, unlock, {passive:true}));
+
+
+  /* ---------- VTube Studio ---------- */
+  const vOn=$('#vOn'), vPort=$('#vPort'), vAuto=$('#vAuto'), vOpt=$('#vOpt'), vActs=$('#vActs'), vType=$('#vType'), vDot=$('#vDot'), vStatus=$('#vStatus'), vLog=$('#vLog');
+  const V = { ws:null, ready:false, denied:false, t:null, n:0, pend:new Map(), token:'', map:{}, models:[], hot:[], exp:[], items:[], rev:new Set(), sig:'' };
+  const AT = { hotkey:'⌨️ Activar hotkey', model:'🧍 Cambiar avatar', expr:'🎭 Expresión', tint:'🎨 Tinte de color', move:'↔️ Mover / girar / escalar', item:'✨ Objeto en pantalla', wait:'⏱️ Esperar' };
+  const DEF = { hotkey:{hk:'',hkName:'',dur:0}, model:{model:'',mName:'',dur:0}, expr:{file:'',mode:'on',dur:0}, tint:{color:'#ff4d6d',rainbow:false,dur:5}, move:{mode:'rel',x:0,y:0,rot:0,size:0,time:.5,dur:0,center:false}, item:{file:'',x:0,y:0,size:.3,dur:5}, wait:{s:1} };
+  vType.innerHTML = Object.keys(AT).map(k => `<option value="${k}">${AT[k]}</option>`).join('');
+  const vCur = () => (V.map[vOpt.value] = V.map[vOpt.value] || []);
+  const vSet = (k,t) => { vDot.className = 'dot' + (k ? ' ' + k : ''); vStatus.textContent = t; };
+  function vLogAdd(t){ const d = new Date().toLocaleTimeString(); vLog.textContent = (d + '  ' + t + '\n' + (vLog.textContent === 'Sin actividad.' ? '' : vLog.textContent)).slice(0, 2500); }
+  const vData = () => ({ on:vOn.checked, port:vPort.value, auto:vAuto.checked, token:V.token, map:V.map });
+  function vtsLoad(d){ if(!d) return; vOn.checked = !!d.on; vPort.value = d.port || 8001; vAuto.checked = d.auto !== false; V.token = d.token || ''; V.map = d.map || {};
+    Object.values(V.map).forEach(L => L.forEach((a, i) => { if(a.t !== 'rand') return; const u = a.dur || 0, k = a.kind;
+      L[i] = k === 'hotkey' ? { t:'hotkey', hk:'__rand__', hkName:'', dur:u } : k === 'model' ? { t:'model', model:'__rand__', mName:'', dur:u } : k === 'item' ? { t:'item', file:'__rand__', x:0, y:0, size:.3, dur:u } : k === 'tint' ? { t:'tint', color:'#ff4d6d', rainbow:false, rnd:true, dur:u } : { t:'expr', file:'__rand__', mode:'on', dur:u }; })); }
+
+  function vReq(type, data, ms){
+    return new Promise((res, rej) => {
+      if(!V.ws || V.ws.readyState !== 1) return rej(new Error('VTube Studio no está conectado'));
+      const id = 'r' + (++V.n), to = setTimeout(() => { V.pend.delete(id); rej(new Error('VTube Studio no respondió')); }, ms || 8000);
+      V.pend.set(id, { res, rej, to });
+      V.ws.send(JSON.stringify({ apiName:'VTubeStudioPublicAPI', apiVersion:'1.0', requestID:id, messageType:type, data:data || {} }));
+    });
+  }
+  const PLUG = { pluginName:'Ruleta de Sayler', pluginDeveloper:'Sayler' };
+  async function vAuth(){
+    if(V.token){ try{ const r = await vReq('AuthenticationRequest', { ...PLUG, authenticationToken:V.token }); if(r.authenticated) return; }catch(e){} }
+    const t = await vReq('AuthenticationTokenRequest', PLUG, 60000);
+    V.token = t.authenticationToken;
+    const r = await vReq('AuthenticationRequest', { ...PLUG, authenticationToken:V.token });
+    if(!r.authenticated) throw new Error('permiso denegado');
+    save();
+  }
+  function vtsConnect(){
+    clearTimeout(V.t); V.denied = false; V.ready = false;
+    if(V.ws){ try{ V.ws.onclose = null; V.ws.close(); }catch(e){} V.ws = null; }
+    if(!vOn.checked){ vSet('', 'Desconectado'); return; }
+    vSet('connecting', 'Conectando…');
+    let ws;
+    try{ ws = new WebSocket('ws://127.0.0.1:' + (+vPort.value || 8001)); }catch(e){ vSet('retry', 'Reintentando…'); V.t = setTimeout(vtsConnect, 3000); return; }
+    V.ws = ws;
+    ws.onopen = async () => {
+      try{
+        vSet('connecting', 'Acepta el permiso dentro de VTube Studio…');
+        await vAuth(); V.ready = true; vSet('on', 'Conectado a VTube Studio'); vLogAdd('Conectado'); vtsRefresh();
+      }catch(e){ V.denied = true; vSet('retry', 'No autorizado (' + e.message + '). Apaga y vuelve a encender para reintentar.'); }
+    };
+    ws.onmessage = ev => {
+      let m; try{ m = JSON.parse(ev.data); }catch(e){ return; }
+      const p = V.pend.get(m.requestID); if(!p) return;
+      V.pend.delete(m.requestID); clearTimeout(p.to);
+      m.messageType === 'APIError' ? p.rej(new Error((m.data && m.data.message) || 'error de la API')) : p.res(m.data);
+    };
+    ws.onclose = () => {
+      V.ready = false; V.pend.forEach(p => { clearTimeout(p.to); p.rej(new Error('conexión cerrada')); }); V.pend.clear();
+      if(!V.denied){ vSet('retry', 'Reintentando…'); V.t = setTimeout(vtsConnect, 3000); }
+    };
+    ws.onerror = () => {};
+  }
+  async function vtsRefresh(){
+    if(!V.ready) return;
+    try{
+      V.models = (await vReq('AvailableModelsRequest')).availableModels || [];
+      V.hot = [];
+      try{ V.cur = (await vReq('CurrentModelRequest')).modelID; }catch(e){}
+      for(const md of V.models.slice(0, 25)){
+        try{ const h = await vReq('HotkeysInCurrentModelRequest', { modelID:md.modelID }); V.hot.push({ id:md.modelID, name:md.modelName, list:h.availableHotkeys || [] }); }catch(e){}
+      }
+      V.exp = (await vReq('ExpressionStateRequest', { details:false }).catch(() => ({}))).expressions || [];
+      V.items = (await vReq('ItemListRequest', { includeAvailableSpots:false, includeItemInstancesInScene:false, includeAvailableItemFiles:true }).catch(() => ({}))).availableItemFiles || [];
+      vLogAdd(`Listas: ${V.models.length} avatares, ${V.hot.reduce((n, g) => n + g.list.length, 0)} hotkeys, ${V.exp.length} expresiones, ${V.items.length} objetos`);
+    }catch(e){ vLogAdd('⚠ ' + e.message); }
+    vtsRender();
+  }
+
+  /* ---------- editor de acciones ---------- */
+  const RO = v => `<option value="__rand__"${v === '__rand__' ? ' selected' : ''}>🎲 Al azar (todos)</option><option value="__pick__"${v === '__pick__' ? ' selected' : ''}>🎯 Al azar (solo los que yo elija)</option>`;
+  const isP = v => v === '__rand__' || v === '__pick__';
+  const poolBox = (a, i, groups, kv, kl) => {
+    const pool = a.pool || [], n = groups.reduce((t, g) => t + g.list.length, 0);
+    const html = groups.map(g => g.list.length ? (g.name ? `<div class="pg">${esc(g.name)}</div>` : '') + `<div class="pl">${g.list.map(x => `<label><input type="checkbox" data-i="${i}" data-pool="${esc(x[kv])}"${pool.includes(x[kv]) ? ' checked' : ''}><span>${esc(x[kl] || '(sin nombre)')}</span></label>`).join('')}</div>` : '').join('');
+    return `<div class="pool"><div class="ph"><span>🎯 Entran al azar: ${pool.length} de ${n}</span><span class="mini"><button class="ghost small" data-op="pall" data-i="${i}" type="button">Todos</button><button class="ghost small" data-op="pnone" data-i="${i}" type="button">Ninguno</button></span></div>${html || '<p class="help">No hay nada en la lista; pulsa «Actualizar listas».</p>'}</div>`;
+  };
+  const sel = (list, v, kv, kl, fb) => '<option value="">— elige —</option>' + RO(v) + list.map(x => `<option value="${esc(x[kv])}"${x[kv] === v ? ' selected' : ''}>${esc(x[kl])}</option>`).join('') + (v && !isP(v) && !list.some(x => x[kv] === v) ? `<option value="${esc(v)}" selected>${esc(fb || v)} (guardado)</option>` : '');
+  const hkOpts = a => '<option value="">— elige —</option>' + RO(a.hk) + V.hot.map(g => g.list.length ? `<optgroup label="${esc(g.name)}">${g.list.map(h => `<option value="${esc(h.hotkeyID)}"${h.hotkeyID === a.hk ? ' selected' : ''}>${esc(h.name || '(sin nombre)')}</option>`).join('')}</optgroup>` : '').join('') + (a.hk && !isP(a.hk) && !V.hot.some(g => g.list.some(h => h.hotkeyID === a.hk)) ? `<option value="${esc(a.hk)}" selected>${esc(a.hkName || a.hk)} (guardado)</option>` : '');
+  const F = (i, k, l, v, t, o) => `<label class="row"><span>${l}</span><span class="ctl">${t === 'select' ? `<select data-i="${i}" data-k="${k}">${o}</select>` : t === 'check' ? `<input type="checkbox" data-i="${i}" data-k="${k}"${v ? ' checked' : ''}>` : `<input type="${t || 'number'}" data-i="${i}" data-k="${k}" value="${esc(v)}"${(t || 'number') === 'number' ? ' step="any"' : ''}>`}</span></label>`;
+  const body = (a, i) => ({
+    hotkey: () => F(i, 'hk', 'Hotkey (del avatar indicado)', 0, 'select', hkOpts(a)) + (a.hk === '__pick__' ? poolBox(a, i, V.hot, 'hotkeyID', 'name') : '') + F(i, 'dur', '⏱ Volver a activarla tras (segundos, 0 = no; sirve para hotkeys de alternar)', a.dur || 0),
+    model: () => F(i, 'model', 'Avatar', 0, 'select', sel(V.models, a.model, 'modelID', 'modelName', a.mName)) + (a.model === '__pick__' ? poolBox(a, i, [{ name:'', list:V.models }], 'modelID', 'modelName') : '') + F(i, 'dur', '⏱ Volver al avatar anterior tras (segundos, 0 = no)', a.dur || 0) + '<p class="help" style="margin:0">Después de cambiar de avatar se espera 1.5 s antes de la siguiente acción.</p>',
+    expr: () => F(i, 'file', 'Expresión', 0, 'select', sel(V.exp, a.file, 'file', 'name')) + (a.file === '__pick__' ? poolBox(a, i, [{ name:'', list:V.exp }], 'file', 'name') : '') + F(i, 'mode', 'Acción', 0, 'select', `<option value="on"${a.mode === 'on' ? ' selected' : ''}>Activar</option><option value="off"${a.mode === 'off' ? ' selected' : ''}>Desactivar</option>`) + F(i, 'dur', 'Revertir tras (segundos, 0 = no)', a.dur),
+    tint: () => F(i, 'color', 'Color', a.color, 'color') + F(i, 'rainbow', 'Efecto arcoíris', a.rainbow, 'check') + F(i, 'rnd', '🎲 Color al azar', a.rnd, 'check') + F(i, 'dur', 'Quitar tras (segundos, 0 = dejar)', a.dur),
+    move: () => F(i, 'mode', 'Qué hacer', 0, 'select', `<option value="rel"${a.mode !== 'center' ? ' selected' : ''}>Moverlo desde donde esté</option><option value="center"${a.mode === 'center' ? ' selected' : ''}>Ponerlo en el centro (posición 0,0 y sin giro)</option>`) + (a.mode === 'center' ? F(i, 'time', 'Duración del movimiento (0–2 s)', a.time) : F(i, 'x', 'Mover en X (−1 izquierda, 1 derecha)', a.x) + F(i, 'y', 'Mover en Y (−1 abajo, 1 arriba)', a.y) + F(i, 'rot', 'Girar (grados)', a.rot) + F(i, 'size', 'Tamaño (+ agranda, − encoge)', a.size) + F(i, 'time', 'Duración del movimiento (0–2 s)', a.time) + F(i, 'dur', '⏱ Volver atrás tras (segundos, 0 = no)', a.dur) + F(i, 'center', 'Al volver atrás, ir siempre al centro', a.center, 'check')),
+    item: () => F(i, 'file', 'Objeto', 0, 'select', sel(V.items, a.file, 'fileName', 'fileName')) + (a.file === '__pick__' ? poolBox(a, i, [{ name:'', list:V.items }], 'fileName', 'fileName') : '') + F(i, 'x', 'Posición X (−1 a 1)', a.x) + F(i, 'y', 'Posición Y (−1 a 1)', a.y) + F(i, 'size', 'Tamaño (0 a 1)', a.size) + F(i, 'dur', 'Quitar tras (segundos, 0 = dejar)', a.dur),
+    wait: () => F(i, 's', 'Segundos de espera', a.s)
+  })[a.t]();
+  function vtsRender(){
+    const L = vCur();
+    vActs.innerHTML = L.length ? L.map((a, i) => `<div class="act"><h4><span>${i + 1}. ${AT[a.t]}</span><span class="mini"><button class="ghost small" data-op="up" data-i="${i}" type="button">↑</button><button class="ghost small" data-op="down" data-i="${i}" type="button">↓</button><button class="ghost small" data-op="del" data-i="${i}" type="button">✕</button></span></h4>${body(a, i)}</div>`).join('') : '<p class="help">Esta opción todavía no hace nada en VTube Studio. Añade una acción abajo.</p>';
+  }
+  function vtsOpts(force){
+    const o = [...new Set(parse())], sig = o.join('\n') + '|' + o.map(t => (V.map[t] || []).length).join();
+    if(!force && sig === V.sig) return;
+    V.sig = sig;
+    const cur = vOpt.value;
+    vOpt.innerHTML = o.length ? o.map(t => `<option value="${esc(t)}">${esc(t)}${(V.map[t] || []).length ? '  ·  ' + V.map[t].length + ' acción(es)' : ''}</option>`).join('') : '<option value="">(la ruleta no tiene opciones)</option>';
+    if(o.includes(cur)) vOpt.value = cur;
+    vtsRender();
+  }
+  vOpt.addEventListener('change', vtsRender);
+  vOpt.addEventListener('mousedown', () => vtsOpts());
+  vActs.addEventListener('input', e => {
+    const el = e.target, i = el.dataset.i, k = el.dataset.k; if(i == null) return;
+    const a = vCur()[i]; if(!a) return;
+    if(el.dataset.pool != null){
+      const id = el.dataset.pool; a.pool = (a.pool || []).filter(x => x !== id); if(el.checked) a.pool.push(id);
+      const c = el.closest('.pool').querySelector('.ph span'); if(c) c.textContent = c.textContent.replace(/: \d+ de/, ': ' + a.pool.length + ' de');
+      save(); return;
+    }
+    if(!k) return;
+    const was = a[k];
+    a[k] = el.type === 'checkbox' ? el.checked : el.type === 'number' ? (parseFloat(el.value) || 0) : el.value;
+    if(k === 'mode' || (el.tagName === 'SELECT' && (was === '__pick__' || a[k] === '__pick__'))) vtsRender();
+    if(k === 'hk') a.hkName = el.selectedOptions[0].textContent;
+    if(k === 'model') a.mName = el.selectedOptions[0].textContent;
+    save();
+  });
+  vActs.addEventListener('click', e => {
+    const b = e.target.closest('[data-op]'); if(!b) return;
+    const L = vCur(), i = +b.dataset.i, op = b.dataset.op;
+    if(op === 'pall' || op === 'pnone'){
+      const a = L[i]; if(!a) return;
+      a.pool = op === 'pnone' ? [] : [...b.closest('.pool').querySelectorAll('[data-pool]')].map(c => c.dataset.pool);
+      vtsRender(); save(); return;
+    }
+    if(op === 'del') L.splice(i, 1);
+    else { const j = op === 'up' ? i - 1 : i + 1; if(j < 0 || j >= L.length) return; [L[i], L[j]] = [L[j], L[i]]; }
+    vtsRender(); vtsOpts(); save();
+  });
+  $('#vAdd').addEventListener('click', () => {
+    if(!vOpt.value) return;
+    vCur().push({ t:vType.value, ...JSON.parse(JSON.stringify(DEF[vType.value])) });
+    vtsRender(); vtsOpts(); save();
+  });
+  $('#vTest').addEventListener('click', () => vtsRun(vOpt.value, true));
+  $('#vRefresh').addEventListener('click', vtsRefresh);
+  $('#vReset').addEventListener('click', vtsRestore);
+  [vOn, vPort].forEach(el => el.addEventListener('input', () => { save(); vtsConnect(); }));
+  vAuto.addEventListener('input', save);
+
+  /* ---------- ejecución ---------- */
+  const need = (v, m) => { if(!v) throw new Error(m); };
+  const later = (sec, fn) => {
+    if(!(sec > 0)) return;
+    const r = { fn }; r.h = setTimeout(() => { V.rev.delete(r); fn().catch(() => {}); }, sec * 1000); V.rev.add(r);
+  };
+  const tintReq = (c, rainbow) => vReq('ColorTintRequest', { colorTint:{ colorR:c[0], colorG:c[1], colorB:c[2], colorA:255, jeb_:!!rainbow }, artMeshMatcher:{ tintAll:true } });
+  const moveReq = (a, s) => vReq('MoveModelRequest', { timeInSeconds:Math.min(2, Math.max(0, a.time)), valuesAreRelativeToModel:true, positionX:a.x * s, positionY:a.y * s, rotation:a.rot * s, size:a.size * s });
+  const exprReq = (f, on) => vReq('ExpressionActivationRequest', { expressionFile:f, active:on, fadeTime:.25 });
+  const pick = l => { need(l.length, 'No hay nada que elegir; pulsa «Actualizar listas»'); return l[randInt(l.length)]; };
+  const pickIn = (l, a, key) => { const P = a.pool || []; need(P.length, 'No marcaste ninguno para el azar'); return pick(l.filter(x => P.includes(x[key]))); };
+  const centerReq = t => vReq('MoveModelRequest', { timeInSeconds:Math.min(2, Math.max(0, t)), valuesAreRelativeToModel:false, positionX:0, positionY:0, rotation:0 });
+  const DO = {
+    hotkey: async a => {
+      need(a.hk, 'Falta elegir la hotkey');
+      let id = a.hk;
+      if(id === '__rand__'){ const g = V.hot.find(g => g.id === V.cur) || V.hot[0], h = pick(g ? g.list : []); id = h.hotkeyID; vLogAdd('🎲 ' + h.name); }
+      else if(id === '__pick__'){ const g = V.hot.find(g => g.id === V.cur), all = V.hot.flatMap(g => g.list), P = a.pool || [], mine = g ? g.list.filter(h => P.includes(h.hotkeyID)) : [], h = mine.length ? pick(mine) : pickIn(all, a, 'hotkeyID'); id = h.hotkeyID; vLogAdd('🎯 ' + h.name); }
+      const t = () => vReq('HotkeyTriggerRequest', { hotkeyID:id }); await t(); later(a.dur, t);
+    },
+    model: async a => {
+      need(a.model, 'Falta elegir el avatar');
+      let id = a.model;
+      if(id === '__rand__'){ const m = pick(V.models.filter(m => m.modelID !== V.cur)); id = m.modelID; vLogAdd('🎲 ' + m.modelName); }
+      else if(id === '__pick__'){ const m = pickIn(V.models.filter(m => m.modelID !== V.cur), a, 'modelID'); id = m.modelID; vLogAdd('🎯 ' + m.modelName); }
+      await loadModel(id, a.dur);
+    },
+    expr: async a => {
+      need(a.file, 'Falta elegir la expresión');
+      let f = a.file; if(f === '__rand__'){ const x = pick(V.exp); f = x.file; vLogAdd('🎲 ' + x.name); }
+      else if(f === '__pick__'){ const x = pickIn(V.exp, a, 'file'); f = x.file; vLogAdd('🎯 ' + x.name); }
+      const on = a.mode !== 'off'; await exprReq(f, on); later(a.dur, () => exprReq(f, !on));
+    },
+    tint: async a => {
+      let c;
+      if(a.rnd){ const h = randFloat() * 360; c = [0, 8, 4].map(n => { const k = (n + h / 30) % 12; return Math.round(255 * (.5 - .5 * Math.max(-1, Math.min(k - 3, 9 - k, 1)))); }); }
+      else c = [1, 3, 5].map(i => parseInt(a.color.substr(i, 2), 16));
+      await tintReq(c, a.rainbow); later(a.dur, () => tintReq([255, 255, 255], false));
+    },
+    move: async a => {
+      if(a.mode === 'center'){ await centerReq(a.time); return; }
+      await moveReq(a, 1); later(a.dur, () => a.center ? centerReq(a.time) : moveReq(a, -1));
+    },
+    item: async a => {
+      need(a.file, 'Falta elegir el objeto');
+      let f = a.file; if(f === '__rand__'){ f = pick(V.items).fileName; vLogAdd('🎲 ' + f); }
+      else if(f === '__pick__'){ f = pickIn(V.items, a, 'fileName').fileName; vLogAdd('🎯 ' + f); }
+      const r = await vReq('ItemLoadRequest', { fileName:f, positionX:a.x, positionY:a.y, size:a.size, rotation:0, fadeTime:.3, order:0, failIfOrderTaken:false, smoothing:0, censored:false, flipped:false, locked:false, unloadWhenPluginDisconnects:true });
+      later(a.dur, () => vReq('ItemUnloadRequest', { instanceIDs:[r.instanceID] }));
+    },
+    wait: a => sleep((+a.s || 0) * 1000)
+  };
+  async function loadModel(id, dur){
+    const prev = V.cur;
+    await vReq('ModelLoadRequest', { modelID:id }, 20000); V.cur = id; await sleep(1500);
+    if(prev && prev !== id) later(dur, async () => { await vReq('ModelLoadRequest', { modelID:prev }, 20000); V.cur = prev; });
+  }
+  async function vtsRun(opt, force){
+    if(!(force || vAuto.checked)) return;
+    const L = V.map[opt] || [];
+    if(!L.length) return;
+    if(!V.ready){ vLogAdd('⚠ "' + opt + '" tiene acciones pero VTube Studio no está conectado'); return; }
+    vLogAdd('▶ ' + opt);
+    for(const a of L){ try{ await DO[a.t](a); }catch(e){ vLogAdd('⚠ ' + AT[a.t] + ': ' + e.message); } }
+  }
+  async function vtsRestore(){
+    for(const r of [...V.rev]){ clearTimeout(r.h); V.rev.delete(r); try{ await r.fn(); }catch(e){} }
+    try{ await tintReq([255, 255, 255], false); await vReq('ItemUnloadRequest', { unloadAllLoadedByThisPlugin:true }); vLogAdd('Todo restaurado'); }catch(e){ vLogAdd('⚠ ' + e.message); }
+  }
+  function vtsInit(){ vtsOpts(true); vtsConnect(); }
+
+  /* ---------- sonidos y links ---------- */
+  const SKEY = 'ruleta-de-sayler-sonidos-v1';
+  const sAuto=$('#sAuto'), sVol=$('#sVol'), sStop=$('#sStop'), sKind=$('#sKind'), sFile=$('#sFile'), sUrl=$('#sUrl'), sLib=$('#sLib');
+  const sOpt=$('#sOpt'), sActs=$('#sActs'), sLog=$('#sLog'), sDock=$('#sDock'), sNoteEl=$('#sNote');
+  const S = { items:[], map:{}, vol:80, auto:true, sig:'' };
+  const SK = { sfx:'🔊 Efectos de sonido', song:'🎵 Canciones', link:'🔗 Links' };
+  const SKI = { sfx:'🔊', song:'🎵', link:'🔗' };
+  const SP = new Set();
+  const SDEF = { src:'', pool:[], n:1, vol:100, delay:0, max:0, cut:false, wait:false };
+  let sNoteT = null;
+  const sId = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+  const sGet = id => S.items.find(x => x.id === id);
+  const sCur = () => (S.map[sOpt.value] = S.map[sOpt.value] || []);
+  const isPool = v => v === '__all__' || v === '__sfx__' || v === '__song__' || v === '__link__' || v === '__pick__';
+  const shuffle = a => { a = a.slice(); for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+  const fmtDur = d => { if(!(d > 0)) return ''; const t = Math.round(d); return Math.floor(t / 60) + ':' + String(t % 60).padStart(2, '0'); };
+  function sNote(t){ sNoteEl.textContent = t; clearTimeout(sNoteT); sNoteT = setTimeout(() => { sNoteEl.textContent = ''; }, 5000); }
+  function sLogAdd(t){ const d = new Date().toLocaleTimeString(); sLog.textContent = (d + '  ' + t + '\n' + (sLog.textContent === 'Sin actividad.' ? '' : sLog.textContent)).slice(0, 2500); }
+  function sSave(){ try{ localStorage.setItem(SKEY, JSON.stringify({ items:S.items, map:S.map, vol:S.vol, auto:S.auto })); if(!IS_POPUP && !IS_LIVE && window.SaylerSync) SaylerSync.changed(); }catch(e){} }
+  function sLoad(){
+    try{
+      const d = JSON.parse(localStorage.getItem(SKEY));
+      if(d){
+        S.items = (d.items || []).filter(x => x && x.id && x.name && SK[x.kind] && (x.type === 'file' || (x.type === 'link' && x.url)))
+          .map(x => ({ id:String(x.id), kind:x.kind, type:x.type, name:String(x.name), url:x.url || '', dur:+x.dur || 0, sec:+x.sec || 0 }));
+        S.map = d.map && typeof d.map === 'object' ? d.map : {};
+        S.vol = d.vol == null ? 80 : Math.max(0, Math.min(100, +d.vol || 0));
+        S.auto = d.auto !== false;
+      }
+    }catch(e){}
+    sAuto.checked = S.auto; sVol.value = S.vol;
+  }
+
+  /* archivos de audio: se guardan en IndexedDB (no caben en localStorage) */
+  let sDbP = null;
+  const sDb = () => sDbP || (sDbP = new Promise((res, rej) => {
+    if(!window.indexedDB){ rej(new Error('este navegador no puede guardar archivos')); return; }
+    const r = indexedDB.open('ruleta-sonidos', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('blobs');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error || new Error('no pude abrir el almacén de audios'));
+  }));
+  const sDbDo = (mode, fn) => sDb().then(db => new Promise((res, rej) => {
+    const t = db.transaction('blobs', mode), q = fn(t.objectStore('blobs'));
+    t.oncomplete = () => res(q && q.result); t.onerror = () => rej(t.error);
+  }));
+  const sdbPut = (id, blob) => sDbDo('readwrite', st => st.put(blob, id));
+  const sdbGet = id => sDbDo('readonly', st => st.get(id));
+  const sdbDel = id => sDbDo('readwrite', st => st.delete(id)).catch(() => {});
+
+  /* links */
+  function ytId(u){
+    try{
+      const x = new URL(u), h = x.hostname.replace(/^(www|m|music)\./, ''); let id = '';
+      if(h === 'youtu.be') id = x.pathname.slice(1).split('/')[0];
+      else if(h === 'youtube.com' || h === 'youtube-nocookie.com'){
+        if(x.pathname === '/watch') id = x.searchParams.get('v') || '';
+        else { const m = x.pathname.match(/^\/(?:shorts|embed|live|v)\/([\w-]{11})/); if(m) id = m[1]; }
+      }
+      return /^[\w-]{11}$/.test(id) ? id : '';
+    }catch(e){ return ''; }
+  }
+  function linkType(u){
+    if(ytId(u)) return 'yt';
+    if(/\.(mp3|wav|ogg|oga|m4a|aac|opus|flac)(\?|#|$)/i.test(u)) return 'audio';
+    if(/\.(mp4|webm|mov|m4v|ogv)(\?|#|$)/i.test(u)) return 'video';
+    return 'page';
+  }
+  const LT = { yt:'YouTube', audio:'audio', video:'video', page:'página' };
+  function mediaDur(src){
+    return new Promise(res => {
+      const m = new Audio(); m.preload = 'metadata';
+      const fin = () => { clearTimeout(tm); m.removeAttribute('src'); try{ m.load(); }catch(e){} res(isFinite(m.duration) && m.duration > 0 ? m.duration : 0); };
+      const tm = setTimeout(fin, 5000);
+      m.onloadedmetadata = fin; m.onerror = fin; m.src = src;
+    });
+  }
+
+  /* YouTube: API de reproductor incrustado (da la duración y avisa cuando termina) */
+  function ytApi(){
+    if(window.YT && YT.Player) return Promise.resolve();
+    if(ytApi.p) return ytApi.p;
+    return (ytApi.p = new Promise((res, rej) => {
+      const prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { if(prev) try{ prev(); }catch(e){} res(); };
+      const sc = document.createElement('script');
+      sc.src = 'https://www.youtube.com/iframe_api';
+      sc.onerror = () => { ytApi.p = null; rej(new Error('no pude cargar YouTube; ¿hay internet?')); };
+      document.head.appendChild(sc);
+      setTimeout(() => { if(!(window.YT && YT.Player)){ ytApi.p = null; rej(new Error('YouTube tardó demasiado en cargar')); } }, 12000);
+    }));
+  }
+  const ytVars = v => { if(/^https?:$/.test(location.protocol)) v.origin = location.origin; return v; };
+  function ytDetect(id){
+    return ytApi().then(() => new Promise(res => {
+      const holder = document.createElement('div'), box = document.createElement('div');
+      holder.style.cssText = 'position:fixed;left:-9999px;top:0;width:200px;height:200px';
+      holder.appendChild(box); document.body.appendChild(holder);
+      let done = false, pl = null;
+      const fin = d => { if(done) return; done = true; clearTimeout(tm); try{ if(pl) pl.destroy(); }catch(e){} holder.remove(); res(d); };
+      const tm = setTimeout(() => fin(0), 12000);
+      pl = new YT.Player(box, { videoId:id, width:200, height:200, playerVars:ytVars({ controls:0 }), events:{
+        onStateChange: e => { if(e.data === 5 || e.data === 1){ const d = e.target.getDuration(); if(d > 0) fin(d); } },
+        onError: () => fin(0)
+      } });
+    })).catch(() => 0);
+  }
+
+  /* biblioteca */
+  function sRenderLib(){
+    sLib.innerHTML = S.items.length ? S.items.map(it => {
+      const lt = it.type === 'link' ? linkType(it.url) : '';
+      const dur = fmtDur(it.dur) || (lt === 'yt' ? '⏱ sin detectar' : '');
+      const tab = it.type === 'link' && (lt === 'page' || lt === 'yt') ? `<input type="number" data-f="sec" min="0" step="1" value="${it.sec || ''}" placeholder="auto" title="Si se abre en una ventana: cerrarla tras estos segundos (vacío = automático)" aria-label="Cerrar la ventana tras (segundos)">` : '';
+      return `<div class="li" data-id="${esc(it.id)}"><span title="${esc(SK[it.kind])}">${SKI[it.kind]}</span><input type="text" data-f="name" value="${esc(it.name)}" aria-label="Nombre">`
+        + `<span class="dur">${esc(it.type === 'link' ? LT[lt] + (dur ? ' · ' + dur : '') : dur)}</span>`
+        + (it.type === 'file' ? `<select data-f="kind" aria-label="Categoría"><option value="sfx"${it.kind === 'sfx' ? ' selected' : ''}>Efecto</option><option value="song"${it.kind === 'song' ? ' selected' : ''}>Canción</option></select>` : '')
+        + tab + `<button class="ghost small" data-op="prev" type="button" title="Probar / parar">▶</button><button class="ghost small" data-op="rm" type="button" title="Quitar de la biblioteca">✕</button></div>`;
+    }).join('') : '<p class="help" style="margin:0">La biblioteca está vacía. Añade audios o links arriba.</p>';
+  }
+  sLib.addEventListener('change', e => {
+    const row = e.target.closest('.li'); if(!row) return;
+    const it = sGet(row.dataset.id), f = e.target.dataset.f; if(!it || !f) return;
+    if(f === 'name') it.name = e.target.value.trim() || it.name;
+    else if(f === 'kind') it.kind = e.target.value;
+    else if(f === 'sec') it.sec = Math.max(0, parseFloat(e.target.value) || 0);
+    sSave(); sRenderLib(); sRenderActs();
+  });
+  sLib.addEventListener('click', e => {
+    const b = e.target.closest('[data-op]'), row = e.target.closest('.li'); if(!b || !row) return;
+    const it = sGet(row.dataset.id); if(!it) return;
+    if(b.dataset.op === 'prev'){
+      const on = [...SP].filter(h => h.id === it.id);
+      if(on.length) on.forEach(h => { h.stopped = true; try{ h.stop(); }catch(x){} });
+      else sPlayItem(it, { vol:100, max:0 });
+    } else if(b.dataset.op === 'rm'){
+      [...SP].filter(h => h.id === it.id).forEach(h => { h.stopped = true; try{ h.stop(); }catch(x){} });
+      S.items = S.items.filter(x => x.id !== it.id);
+      Object.values(S.map).forEach(L => L.forEach(a => { if(a.pool) a.pool = a.pool.filter(x => x !== it.id); }));
+      if(it.type === 'file') sdbDel(it.id);
+      sSave(); sRenderLib(); sRenderActs();
+    }
+  });
+  $('#sAddFile').addEventListener('click', () => sFile.click());
+  sFile.addEventListener('change', async () => {
+    const files = [...(sFile.files || [])]; sFile.value = '';
+    let n = 0;
+    for(const f of files){
+      try{
+        const url = URL.createObjectURL(f), dur = await mediaDur(url); URL.revokeObjectURL(url);
+        const id = sId(); await sdbPut(id, f);
+        const kind = sKind.value === 'auto' ? (dur > 20 ? 'song' : 'sfx') : sKind.value;
+        S.items.push({ id, kind, type:'file', name:f.name.replace(/\.[^.]+$/, '') || f.name, url:'', dur, sec:0 }); n++;
+      }catch(e){ sNote('No pude guardar «' + f.name + '»: ' + e.message); }
+    }
+    if(n){ sSave(); sRenderLib(); sRenderActs(); sNote(n === 1 ? '1 audio añadido.' : n + ' audios añadidos.'); }
+  });
+  async function sAddLink(){
+    let u = sUrl.value.trim(); if(!u) return;
+    if(!/^[a-z][a-z0-9+.-]*:/i.test(u)) u = 'https://' + u;
+    let url; try{ url = new URL(u); if(!/^https?:$/.test(url.protocol)) throw 0; }catch(e){ sNote('Ese link no es válido.'); return; }
+    const lt = linkType(url.href), base = url.hostname.replace(/^www\./, '');
+    const it = { id:sId(), kind:'link', type:'link', name:base, url:url.href, dur:0, sec:0 };
+    S.items.push(it); sUrl.value = ''; sSave(); sRenderLib(); sRenderActs(); sNote('Link añadido.');
+    if(lt === 'yt'){
+      fetch('https://www.youtube.com/oembed?format=json&url=' + encodeURIComponent(url.href)).then(r => r.json())
+        .then(j => { if(j && j.title && it.name === base && sGet(it.id)){ it.name = j.title; sSave(); if(!sLib.contains(document.activeElement)) sRenderLib(); sRenderActs(); } }).catch(() => {});
+      const d = await ytDetect(ytId(url.href));
+      if(d > 0 && sGet(it.id)){ it.dur = d; sSave(); sRenderLib(); }
+    } else if(lt === 'audio' || lt === 'video'){
+      const d = await mediaDur(url.href);
+      if(d > 0 && sGet(it.id)){ it.dur = d; sSave(); sRenderLib(); }
+    }
+  }
+  $('#sAddLink').addEventListener('click', sAddLink);
+  sUrl.addEventListener('keydown', e => { if(e.key === 'Enter'){ e.preventDefault(); sAddLink(); } });
+
+  /* reproducción */
+  function sMakeCard(h, it){
+    const card = document.createElement('div'); card.className = 'scard';
+    card.innerHTML = `<div class="sh"><span>${SKI[it.kind]} ${esc(it.name)}</span><button type="button" class="ghost small" aria-label="Parar">✕</button></div><div class="sb" hidden></div>`;
+    card.querySelector('button').onclick = () => { h.stopped = true; try{ h.stop(); }catch(e){} };
+    sDock.appendChild(card); return card;
+  }
+  function sStopAll(){ [...SP].forEach(h => { h.stopped = true; try{ h.stop(); }catch(e){} }); }
+  /* reproduce un <audio>/<video>; termina solo al acabar, o al cortar */
+  function sBindMedia(el, h, a, it, src, revoke){
+    return new Promise(res => {
+      let fin = false, tm = 0, fade = 0;
+      const end = () => {
+        if(fin) return; fin = true; clearTimeout(tm); clearInterval(fade);
+        try{ el.pause(); }catch(e){} el.removeAttribute('src'); try{ el.load(); }catch(e){}
+        if(revoke) URL.revokeObjectURL(src); res();
+      };
+      h.stop = end; h.setVol = () => { if(!fade) el.volume = h.vol(); };
+      el.volume = h.vol(); el.onended = end;
+      el.onerror = () => { sLogAdd('⚠ No pude reproducir «' + it.name + '»'); end(); };
+      el.onloadedmetadata = () => {
+        if(isFinite(el.duration) && el.duration > 0 && Math.abs((it.dur || 0) - el.duration) > 1){ it.dur = el.duration; sSave(); if(!sLib.contains(document.activeElement)) sRenderLib(); }
+      };
+      if(a.max > 0) tm = setTimeout(() => { let v = el.volume; const st = v / 8; fade = setInterval(() => { v -= st; if(v <= 0.02) end(); else el.volume = v; }, 50); }, a.max * 1000);
+      if(h.stopped){ end(); return; }
+      el.src = src;
+      el.play().catch(e => { sLogAdd(e && e.name === 'NotAllowedError' ? '⚠ El navegador bloqueó el sonido: haz clic una vez en la página y vuelve a probar' : '⚠ ' + ((e && e.message) || e)); end(); });
+    });
+  }
+  async function sPlayFile(it, a, h){
+    const blob = await sdbGet(it.id);
+    if(h.stopped) return;
+    if(!blob) throw new Error('no encuentro el archivo guardado; vuelve a añadirlo');
+    await sBindMedia(new Audio(), h, a, it, URL.createObjectURL(blob), true);
+  }
+  async function sPlayVideo(it, a, h, card){
+    const body = card.querySelector('.sb'), v = document.createElement('video');
+    v.playsInline = true; body.hidden = false; body.appendChild(v);
+    await sBindMedia(v, h, a, it, it.url, false);
+  }
+  async function sPlayYT(it, a, h, card, id){
+    await ytApi();
+    if(h.stopped) return;
+    const body = card.querySelector('.sb'), box = document.createElement('div');
+    body.hidden = false; body.appendChild(box);
+    await new Promise((res, rej) => {
+      let fin = false, playing = false, tm = 0, pl = null;
+      const wd = setTimeout(() => end(new Error('no empezó a reproducirse')), 15000);
+      const end = err => { if(fin) return; fin = true; clearTimeout(tm); clearTimeout(wd); try{ if(pl) pl.destroy(); }catch(e){} body.textContent = ''; body.hidden = true; if(err) rej(err); else res(); };
+      h.stop = () => end(); h.setVol = () => { try{ pl.setVolume(h.vol() * 100); }catch(e){} };
+      pl = new YT.Player(box, { videoId:id, width:240, height:135, playerVars:ytVars({ autoplay:1, controls:0, rel:0, playsinline:1, modestbranding:1 }), events:{
+        onReady: e => { try{ e.target.setVolume(h.vol() * 100); e.target.playVideo(); }catch(x){} },
+        onStateChange: e => {
+          if(e.data === 1 && !playing){
+            playing = true; clearTimeout(wd);
+            const d = e.target.getDuration();
+            if(d > 0 && Math.abs((it.dur || 0) - d) > 1){ it.dur = d; sSave(); if(!sLib.contains(document.activeElement)) sRenderLib(); }
+            if(a.max > 0) tm = setTimeout(() => end(), a.max * 1000);
+          }
+          if(e.data === 0) end();
+        },
+        onError: e => end(new Error('código ' + e.data))
+      } });
+    });
+  }
+  /* ventana pequeña que se cierra sola (links normales, o YouTube si no carga dentro de la página) */
+  function sPlayTab(it, a, h, url, secs){
+    return new Promise(res => {
+      if(h.stopped){ res(); return; }
+      const w = window.open(url, '_blank', 'popup=yes,width=520,height=360,left=60,top=60');
+      if(!w){ sLogAdd('⚠ El navegador bloqueó la ventana. Permite las ventanas emergentes para esta página (icono en la barra de direcciones).'); res(); return; }
+      let fin = false;
+      const end = () => { if(fin) return; fin = true; clearTimeout(tm); clearInterval(poll); try{ w.close(); }catch(e){} res(); };
+      const tm = setTimeout(end, secs * 1000), poll = setInterval(() => { if(w.closed) end(); }, 1000);
+      h.stop = end;
+      sLogAdd('🔗 Ventana abierta; se cierra sola en ' + fmtDur(secs));
+    });
+  }
+  async function sPlayItem(it, a){
+    const h = { id:it.id, stopped:false, stop(){}, setVol(){}, vol:() => Math.max(0, Math.min(1, (S.vol / 100) * ((a.vol == null ? 100 : a.vol) / 100))) };
+    SP.add(h);
+    const card = sMakeCard(h, it);
+    try{
+      if(it.type === 'file') await sPlayFile(it, a, h);
+      else {
+        const t = linkType(it.url), id = ytId(it.url);
+        if(t === 'yt'){
+          try{ await sPlayYT(it, a, h, card, id); }
+          catch(e){
+            if(h.stopped) return;
+            sLogAdd('⚠ YouTube no se pudo reproducir dentro de la página (' + e.message + '); lo abro en una ventana');
+            const secs = a.max > 0 ? a.max : (it.dur > 0 ? it.dur + 5 : (it.sec > 0 ? it.sec : 240));
+            await sPlayTab(it, a, h, 'https://www.youtube.com/watch?v=' + id + '&autoplay=1', secs);
+          }
+        }
+        else if(t === 'audio') await sBindMedia(new Audio(), h, a, it, it.url, false);
+        else if(t === 'video') await sPlayVideo(it, a, h, card);
+        else await sPlayTab(it, a, h, it.url, a.max > 0 ? a.max : (it.sec > 0 ? it.sec : 30));
+      }
+    }catch(e){ sLogAdd('⚠ ' + it.name + ': ' + e.message); }
+    finally{ SP.delete(h); card.remove(); }
+  }
+  function sCandidates(a){
+    const v = a.src;
+    if(v === '__all__') return S.items.slice();
+    if(v === '__sfx__' || v === '__song__' || v === '__link__') return S.items.filter(x => x.kind === v.slice(2, -2));
+    if(v === '__pick__') return S.items.filter(x => (a.pool || []).includes(x.id));
+    const it = sGet(v); return it ? [it] : [];
+  }
+  async function sRunAction(a){
+    const c = sCandidates(a);
+    if(!c.length){ sLogAdd('⚠ ' + (!a.src ? 'Falta elegir qué reproducir' : a.src === '__pick__' ? 'No marcaste ninguno para el azar' : 'No hay nada que reproducir con esa selección')); return; }
+    const n = isPool(a.src) ? Math.max(1, Math.min(8, Math.round(a.n || 1))) : 1;
+    const chosen = shuffle(c).slice(0, n);
+    const job = (async () => {
+      if(a.delay > 0) await sleep(a.delay * 1000);
+      if(a.cut) sStopAll();
+      await Promise.all(chosen.map(it => { sLogAdd((isPool(a.src) ? '🎲 ' : '▶ ') + it.name); return sPlayItem(it, a); }));
+    })();
+    if(a.wait) await job;
+  }
+  async function sndRun(opt, force){
+    if(!(force || sAuto.checked)) return;
+    const L = S.map[opt] || []; if(!L.length) return;
+    sLogAdd('● ' + opt);
+    for(const a of L){ try{ await sRunAction(a); }catch(e){ sLogAdd('⚠ ' + e.message); } }
+  }
+
+  /* editor de reproducciones por opción */
+  function srcOpts(v){
+    const o = (val, label) => `<option value="${esc(val)}"${val === v ? ' selected' : ''}>${esc(label)}</option>`;
+    let h = '<option value="">— elige —</option><optgroup label="🎲 Al azar">'
+      + o('__all__', '🎲 Al azar (todo lo de la biblioteca)') + o('__sfx__', '🎲 Al azar (solo efectos de sonido)') + o('__song__', '🎲 Al azar (solo canciones)') + o('__link__', '🎲 Al azar (solo links)') + o('__pick__', '🎯 Al azar (solo los que yo elija)') + '</optgroup>';
+    ['sfx', 'song', 'link'].forEach(k => { const l = S.items.filter(x => x.kind === k); if(l.length) h += `<optgroup label="${SK[k]}">` + l.map(x => o(x.id, x.name)).join('') + '</optgroup>'; });
+    if(v && !isPool(v) && !sGet(v)) h += `<option value="${esc(v)}" selected>(ya no está en la biblioteca)</option>`;
+    return h;
+  }
+  function sPoolBox(a, i){
+    const pool = a.pool || [];
+    const html = ['sfx', 'song', 'link'].map(k => { const l = S.items.filter(x => x.kind === k); return l.length ? `<div class="pg">${SK[k]}</div><div class="pl">${l.map(x => `<label><input type="checkbox" data-i="${i}" data-pool="${esc(x.id)}"${pool.includes(x.id) ? ' checked' : ''}><span>${esc(x.name)}</span></label>`).join('')}</div>` : ''; }).join('');
+    return `<div class="pool"><div class="ph"><span>🎯 Entran al azar: ${pool.filter(id => sGet(id)).length} de ${S.items.length}</span><span class="mini"><button class="ghost small" data-op="pall" data-i="${i}" type="button">Todos</button><button class="ghost small" data-op="pnone" data-i="${i}" type="button">Ninguno</button></span></div>${html || '<p class="help">La biblioteca está vacía; añade audios o links arriba.</p>'}</div>`;
+  }
+  const sBody = (a, i) => F(i, 'src', 'Qué reproducir', 0, 'select', srcOpts(a.src))
+    + (a.src === '__pick__' ? sPoolBox(a, i) : '')
+    + (isPool(a.src) ? F(i, 'n', 'Cuántos reproducir (distintos, elegidos al azar)', a.n) : '')
+    + F(i, 'vol', 'Volumen de esta reproducción (0–100 %)', a.vol)
+    + F(i, 'delay', '⏱ Empezar tras (segundos)', a.delay)
+    + F(i, 'max', '✂ Cortar a los (segundos; 0 = hasta que termine solo)', a.max)
+    + F(i, 'cut', 'Cortar antes lo que ya esté sonando', a.cut, 'check')
+    + F(i, 'wait', 'Esperar a que termine antes de la siguiente reproducción', a.wait, 'check');
+  function sRenderActs(){
+    const L = sOpt.value ? sCur() : [];
+    sActs.innerHTML = L.length ? L.map((a, i) => `<div class="act"><h4><span>${i + 1}. 🎧 Reproducir</span><span class="mini"><button class="ghost small" data-op="up" data-i="${i}" type="button">↑</button><button class="ghost small" data-op="down" data-i="${i}" type="button">↓</button><button class="ghost small" data-op="del" data-i="${i}" type="button">✕</button></span></h4>${sBody(a, i)}</div>`).join('')
+      : '<p class="help">Esta opción todavía no reproduce nada. Añade una reproducción abajo.</p>';
+  }
+  function sOpts(force){
+    const o = [...new Set(parse())], sig = o.join('\n') + '|' + o.map(t => (S.map[t] || []).length).join();
+    if(!force && sig === S.sig) return;
+    S.sig = sig;
+    const cur = sOpt.value;
+    sOpt.innerHTML = o.length ? o.map(t => `<option value="${esc(t)}">${esc(t)}${(S.map[t] || []).length ? '  ·  ' + S.map[t].length + ' reproducción(es)' : ''}</option>`).join('') : '<option value="">(la ruleta no tiene opciones)</option>';
+    if(o.includes(cur)) sOpt.value = cur;
+    sRenderActs();
+  }
+  sOpt.addEventListener('change', sRenderActs);
+  sOpt.addEventListener('mousedown', () => sOpts());
+  sActs.addEventListener('input', e => {
+    const el = e.target, i = el.dataset.i, k = el.dataset.k; if(i == null) return;
+    const a = sCur()[i]; if(!a) return;
+    if(el.dataset.pool != null){
+      const id = el.dataset.pool; a.pool = (a.pool || []).filter(x => x !== id); if(el.checked) a.pool.push(id);
+      const c = el.closest('.pool').querySelector('.ph span'); if(c) c.textContent = c.textContent.replace(/: \d+ de/, ': ' + a.pool.filter(x => sGet(x)).length + ' de');
+      sSave(); return;
+    }
+    if(!k) return;
+    a[k] = el.type === 'checkbox' ? el.checked : el.type === 'number' ? (parseFloat(el.value) || 0) : el.value;
+    if(k === 'src') sRenderActs();
+    sSave();
+  });
+  sActs.addEventListener('click', e => {
+    const b = e.target.closest('[data-op]'); if(!b) return;
+    const L = sCur(), i = +b.dataset.i, op = b.dataset.op;
+    if(op === 'pall' || op === 'pnone'){
+      const a = L[i]; if(!a) return;
+      a.pool = op === 'pnone' ? [] : S.items.map(x => x.id);
+      sRenderActs(); sSave(); return;
+    }
+    if(op === 'del') L.splice(i, 1);
+    else { const j = op === 'up' ? i - 1 : i + 1; if(j < 0 || j >= L.length) return; [L[i], L[j]] = [L[j], L[i]]; }
+    sRenderActs(); sOpts(); sSave();
+  });
+  $('#sAdd').addEventListener('click', () => {
+    if(!sOpt.value) return;
+    sCur().push(JSON.parse(JSON.stringify(SDEF)));
+    sRenderActs(); sOpts(); sSave();
+  });
+  $('#sTest').addEventListener('click', () => sndRun(sOpt.value, true));
+  sStop.addEventListener('click', () => { sStopAll(); sLogAdd('■ Todo detenido'); });
+  sAuto.addEventListener('input', () => { S.auto = sAuto.checked; sSave(); });
+  sVol.addEventListener('input', () => { S.vol = +sVol.value; [...SP].forEach(h => { try{ h.setVol(); }catch(e){} }); sSave(); });
+  function sInit(){
+    sLoad(); sRenderLib(); sOpts(true);
+    if(location.protocol === 'file:') $('#sFileNote').textContent = 'Nota: al abrir la página como archivo, YouTube a veces no deja reproducir dentro de ella; en ese caso se abre en una ventanita que se cierra sola.';
+    setInterval(() => sOpts(), 600);
+    window.addEventListener('beforeunload', sStopAll);
+  }
+
+  /* ---------- pestañas ---------- */
+  let tabGo = () => {};
+  function tabsInit(){
+    const btns = [...document.querySelectorAll('.tabs .tab')];
+    const panes = btns.map(b => document.getElementById(b.getAttribute('aria-controls')));
+    const TKEY = 'ruleta-de-sayler-pestana';
+    function sel(i, focus){
+      btns.forEach((b, j) => {
+        const on = j === i;
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+        b.tabIndex = on ? 0 : -1;
+        if(panes[j]) panes[j].hidden = !on;
+      });
+      if(focus) btns[i].focus();
+      try{ localStorage.setItem(TKEY, btns[i].id); }catch(e){}
+    }
+    tabGo = i => sel(i);
+    btns.forEach((b, i) => {
+      b.addEventListener('click', () => sel(i));
+      b.addEventListener('keydown', e => {
+        const k = e.key, n = btns.length;
+        if(k !== 'ArrowRight' && k !== 'ArrowLeft' && k !== 'Home' && k !== 'End') return;
+        e.preventDefault();
+        sel(k === 'Home' ? 0 : k === 'End' ? n - 1 : (i + (k === 'ArrowRight' ? 1 : n - 1)) % n, true);
+      });
+    });
+    let start = 0;
+    try{ const j = btns.findIndex(b => b.id === localStorage.getItem(TKEY)); if(j >= 0) start = j; }catch(e){}
+    sel(start);
+  }
+
+  /* ---------- contadores ---------- */
+  const CKEY = 'ruleta-de-sayler-contadores-v1';
+  const cList = $('#cList'), cAuto = $('#cAuto'), cLog = $('#cLog'), cTabN = $('#cTabN'), cLayer = $('#cLayer');
+  const C = { defs:[], run:{}, sig:'' };
+  /* sonidos que trae la propia página: [clave, nombre, duración aproximada en ms para repetirlos] */
+  const BUILTIN = [
+    ['ding','🔔 Campanita',1500], ['chime','🎐 Carillón',1600], ['sparkle','💫 Destellos',1100],
+    ['fanfare','🎺 Fanfarria',1900], ['alarm','⏰ Alarma',1300], ['buzzer','📣 Zumbador',900],
+    ['win','✨ Premio (el de la ruleta)',2000], ['coin','🪙 Moneda',800]
+  ];
+  const CDEF = {
+    name:'Contador', on:true, mode:'down', fmt:'time', start:60, goal:0, step:1, interval:1,
+    trig:'none', pick:[], again:'restart',
+    show:true, tpl:'{nombre}: {valor}', pos:'bottom', style:'cap', font:'eleg', size:7,
+    fg:'#f7f0ff', bg:'#2b2150', bgA:90, ac:'#f4b3d6', bar:true,
+    endText:'¡Listo!', keep:5, tickLast:0, snd:'b:ding', sndVol:100, sndRep:1, sndMax:0
+  };
+  const HEX = /^#[0-9a-f]{6}$/i;
+  const cId = () => 'c' + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+  const cGet = id => C.defs.find(c => c.id === id);
+  const cNum = v => Math.round(v * 1e6) / 1e6;
+  const cClamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+  const cOneOf = (v, list, d) => list.includes(v) ? v : d;
+  function cLogAdd(t){
+    const d = new Date().toLocaleTimeString();
+    cLog.textContent = (d + '  ' + t + '\n' + (cLog.textContent === 'Sin actividad.' ? '' : cLog.textContent)).slice(0, 2500);
+  }
+  function cNorm(c){
+    c.name = String(c.name == null ? 'Contador' : c.name).slice(0, 40);
+    c.mode = cOneOf(c.mode, ['down','up'], 'down');
+    c.fmt = cOneOf(c.fmt, ['time','num'], 'time');
+    c.trig = cOneOf(c.trig, ['none','any','pick'], 'none');
+    c.again = cOneOf(c.again, ['restart','ignore','add'], 'restart');
+    c.pos = cOneOf(c.pos, ['top','center','bottom'], 'bottom');
+    c.style = cOneOf(c.style, ['cap','txt','ring'], 'cap');
+    c.font = cOneOf(c.font, ['eleg','round','dig'], 'eleg');
+    c.start = isFinite(+c.start) ? +c.start : 0;
+    c.goal = isFinite(+c.goal) ? +c.goal : 0;
+    c.step = +c.step > 0 ? +c.step : 1;
+    c.interval = Math.max(.1, +c.interval || 1);
+    c.size = cClamp(+c.size || 7, 3, 20);
+    c.bgA = cClamp(isFinite(+c.bgA) ? +c.bgA : 90, 0, 100);
+    c.sndVol = cClamp(isFinite(+c.sndVol) ? +c.sndVol : 100, 0, 100);
+    c.sndRep = cClamp(Math.round(+c.sndRep || 1), 1, 10);
+    c.sndMax = Math.max(0, +c.sndMax || 0);
+    c.keep = Math.max(0, isFinite(+c.keep) ? +c.keep : 5);
+    c.tickLast = Math.max(0, Math.round(+c.tickLast || 0));
+    ['fg','bg','ac'].forEach(k => { if(!HEX.test(c[k])) c[k] = CDEF[k]; });
+    ['on','show','bar'].forEach(k => { c[k] = !!c[k]; });
+    c.tpl = String(c.tpl == null ? '' : c.tpl).slice(0, 120);
+    c.endText = String(c.endText == null ? '' : c.endText).slice(0, 120);
+    c.snd = String(c.snd == null ? '' : c.snd);
+    if(!Array.isArray(c.pick)) c.pick = [];
+    c.pick = c.pick.filter(x => typeof x === 'string');
+    return c;
+  }
+  function cSave(){
+    try{ localStorage.setItem(CKEY, JSON.stringify({ auto:cAuto.checked, defs:C.defs })); if(!IS_POPUP && !IS_LIVE && window.SaylerSync) SaylerSync.changed(); }catch(e){}
+  }
+  function cLoad(){
+    try{
+      const d = JSON.parse(localStorage.getItem(CKEY));
+      if(d){
+        cAuto.checked = d.auto !== false;
+        C.defs = (Array.isArray(d.defs) ? d.defs : []).filter(x => x && typeof x === 'object')
+          .map(x => cNorm(Object.assign({}, CDEF, x, { id:String(x.id || cId()) })));
+      }
+    }catch(e){}
+  }
+
+  /* formato y lectura de valores */
+  function cFmt(v, fmt){
+    if(fmt === 'time'){
+      const neg = v < 0, s = Math.round(Math.abs(v));
+      const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60;
+      return (neg ? '-' : '') + (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(x).padStart(2, '0');
+    }
+    return String(Math.round(v * 100) / 100);
+  }
+  const cIn = (v, fmt) => fmt === 'time' ? cFmt(v, 'time') : String(v);
+  function cParse(s, fmt){
+    s = String(s).trim().replace(',', '.');
+    if(fmt === 'time' && s.includes(':')){
+      const p = s.split(':').map(x => parseFloat(x));
+      if(p.some(x => !isFinite(x))) return NaN;
+      return p.reduce((a, x) => a * 60 + x, 0);
+    }
+    const n = parseFloat(s);
+    return isFinite(n) ? n : NaN;
+  }
+  function cWarn(c){
+    if(c.mode === 'down' && c.start <= c.goal) return 'Para que baje, la meta tiene que ser menor que el inicio. Así como está, termina de inmediato.';
+    if(c.mode === 'up' && c.start >= c.goal) return 'Para que suba, la meta tiene que ser mayor que el inicio. Así como está, termina de inmediato.';
+    return '';
+  }
+  const cReached = (c, v) => c.mode === 'down' ? v <= c.goal : v >= c.goal;
+  function cFrac(c, r){
+    const lo = Math.min(c.start, c.goal), hi = Math.max(c.start, c.goal);
+    return hi === lo ? 0 : cClamp((r.val - lo) / (hi - lo), 0, 1);
+  }
+  function cText(c, r, tpl){
+    return tpl.replace(/\{(nombre|valor|meta|inicio|opcion)\}/g, (_, k) => ({
+      nombre:c.name, valor:cFmt(r.val, c.fmt), meta:cFmt(c.goal, c.fmt), inicio:cFmt(c.start, c.fmt), opcion:r.opt || ''
+    })[k]);
+  }
+  function cRgba(hex, a){
+    const n = parseInt(hex.slice(1), 16);
+    return 'rgba(' + (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255) + ',' + (a / 100) + ')';
+  }
+
+  /* motor */
+  async function cPlaySound(c){
+    const v = c.snd; if(!v) return;
+    const reps = cClamp(Math.round(c.sndRep || 1), 1, 10);
+    if(v.startsWith('b:')){
+      const name = v.slice(2), k = cClamp((c.sndVol == null ? 100 : c.sndVol) / 100, 0, 1);
+      const len = (BUILTIN.find(b => b[0] === name) || [0, 0, 1200])[2];
+      for(let i = 0; i < reps; i++){
+        sfx(name, 0, false, k); send({ type:'sfx', name, arg:0, k });
+        if(i < reps - 1) await sleep(len);
+      }
+      return;
+    }
+    const cand = sCandidates({ src:v });
+    if(!cand.length){ cLogAdd('⚠ «' + c.name + '»: el sonido elegido ya no está en la biblioteca'); return; }
+    for(let i = 0; i < reps; i++){
+      await sPlayItem(cand[randInt(cand.length)], { vol:c.sndVol == null ? 100 : c.sndVol, max:c.sndMax || 0 });
+    }
+  }
+  function cFinish(c, r){
+    r.done = true; r.paused = false; r.val = c.goal;
+    cLogAdd('■ «' + c.name + '» llegó a la meta');
+    cPlaySound(c).catch(e => cLogAdd('⚠ ' + (e && e.message ? e.message : e)));
+    if(c.keep > 0) r.hideAt = Date.now() + c.keep * 1000; else delete C.run[c.id];
+  }
+  function cStart(c, opt, manual){
+    const r0 = C.run[c.id];
+    if(!manual && r0 && !r0.done){
+      if(c.again === 'ignore'){ cLogAdd('↷ «' + c.name + '» ya estaba contando; se ignora'); return; }
+      if(c.again === 'add'){
+        r0.val = cNum(r0.val + (c.mode === 'down' ? 1 : -1) * Math.abs(c.start - c.goal));
+        cLogAdd('＋ «' + c.name + '» se alarga una vuelta más'); return;
+      }
+    }
+    const r = C.run[c.id] = { val:c.start, paused:false, done:false, next:Date.now() + c.interval * 1000, pausedAt:0, opt:opt || '', hideAt:0 };
+    cLogAdd('▶ «' + c.name + '»' + (opt && !manual ? ' (salió «' + opt + '»)' : ''));
+    if(cReached(c, c.start)) cFinish(c, r);
+  }
+  function cStop(id){ delete C.run[id]; }
+  function cTick(){
+    const now = Date.now();
+    C.defs.forEach(c => {
+      const r = C.run[c.id]; if(!r) return;
+      if(r.done){ if(r.hideAt && now >= r.hideAt) delete C.run[c.id]; return; }
+      if(r.paused) return;
+      let guard = 0;
+      while(now >= r.next && guard++ < 2000){
+        r.val = cNum(r.val + (c.mode === 'down' ? -1 : 1) * c.step);
+        r.next += c.interval * 1000;
+        if(cReached(c, r.val)){ cFinish(c, r); break; }
+        if(c.tickLast > 0){
+          const left = Math.round(Math.abs(c.goal - r.val) / c.step);
+          if(left > 0 && left <= c.tickLast){
+            const f = 900 + (c.tickLast - left) * 70;
+            sfx('tick', f); send({ type:'sfx', name:'tick', arg:f });
+          }
+        }
+      }
+    });
+  }
+  function cntFire(opt){
+    if(!cAuto.checked) return;
+    C.defs.forEach(c => {
+      if(!c.on) return;
+      if(c.trig === 'any' || (c.trig === 'pick' && c.pick.includes(opt))) cStart(c, opt, false);
+    });
+  }
+
+  /* dibujo en el cuadro del directo (lo usan las dos ventanas) */
+  const cEls = new Map();
+  function renderCnt(list){
+    const keep = new Set();
+    list.forEach(it => {
+      keep.add(it.id);
+      let e = cEls.get(it.id);
+      if(!e){ e = document.createElement('div'); cEls.set(it.id, e); }
+      const st = it.st, sig = JSON.stringify(st);
+      if(e.dataset.sig !== sig){
+        e.dataset.sig = sig;
+        e.className = 'cnt c-' + st.style + ' f-' + st.font;
+        e.style.setProperty('--fs', st.size);
+        e.style.setProperty('--fg', st.fg);
+        e.style.setProperty('--bg', st.bg);
+        e.style.setProperty('--ac', st.ac);
+        e.innerHTML = st.style === 'ring'
+          ? '<div class="ri"><div class="ct"></div></div>'
+          : '<div class="ct"></div>' + (st.bar ? '<div class="cbar"><i></i></div>' : '');
+      }
+      e.classList.toggle('done', !!it.done);
+      e.querySelector('.ct').textContent = it.text;
+      e.style.setProperty('--p', it.frac + '%');
+      const host = cLayer.querySelector('.cpos[data-p="' + st.pos + '"]');
+      if(host && e.parentNode !== host) host.appendChild(e);
+    });
+    [...cEls].forEach(([id, e]) => { if(!keep.has(id)){ e.remove(); cEls.delete(id); } });
+  }
+  function cBuild(){
+    const out = [];
+    C.defs.forEach(c => {
+      const r = C.run[c.id]; if(!r || !c.show) return;
+      const tpl = r.done && c.endText ? c.endText : c.tpl;
+      out.push({
+        id:c.id, text:cText(c, r, tpl), frac:Math.round(cFrac(c, r) * 1000) / 10, done:!!r.done,
+        st:{ style:c.style, font:c.font, pos:c.pos, size:c.size, fg:c.fg, bg:cRgba(c.bg, c.bgA), ac:c.ac, bar:c.bar }
+      });
+    });
+    return out;
+  }
+  let cLast = '';
+  function pushCnt(force){
+    if(IS_POPUP) return;
+    const list = cBuild(), j = JSON.stringify(list);
+    if(force || j !== cLast){ cLast = j; renderCnt(list); send({ type:'cnt', list }); }
+  }
+
+  /* editor */
+  const opt1 = (v, cur, l) => `<option value="${esc(v)}"${v === cur ? ' selected' : ''}>${esc(l)}</option>`;
+  const cSel = (c, k, label, opts) => `<label class="row"><span>${label}</span><span class="ctl"><select data-c="${c.id}" data-k="${k}">${opts.map(o => opt1(o[0], String(c[k]), o[1])).join('')}</select></span></label>`;
+  const cNumF = (c, k, label, min, st) => `<label class="row"><span>${label}</span><span class="ctl"><input type="number" data-c="${c.id}" data-k="${k}" min="${min}" step="${st || 'any'}" value="${c[k]}"></span></label>`;
+  const cVal = (c, k, label) => `<label class="row"><span>${label}</span><span class="ctl"><input type="text" data-kind="val" data-c="${c.id}" data-k="${k}" value="${esc(cIn(c[k], c.fmt))}" style="width:104px;text-align:center" autocomplete="off" spellcheck="false"></span></label>`;
+  const cTxt = (c, k, label, ph) => `<label class="row stack"><span>${label}</span><input type="text" data-c="${c.id}" data-k="${k}" value="${esc(c[k])}" placeholder="${esc(ph || '')}" autocomplete="off"></label>`;
+  const cChk = (c, k, label) => `<label class="row"><span>${label}</span><span class="ctl"><input type="checkbox" data-c="${c.id}" data-k="${k}"${c[k] ? ' checked' : ''}></span></label>`;
+  const cCol = (c, k, label) => `<label class="row"><span>${label}</span><span class="ctl"><input type="color" data-c="${c.id}" data-k="${k}" value="${c[k]}"></span></label>`;
+  const cRng = (c, k, label, min, max, u) => `<label class="row"><span>${label}</span><span class="ctl"><input type="range" min="${min}" max="${max}" step="1" data-c="${c.id}" data-k="${k}" data-u="${u}" value="${c[k]}"><span class="out">${Math.round(c[k])}${u}</span></span></label>`;
+
+  function cSndOpts(v){
+    let h = opt1('', v, 'Sin sonido') + '<optgroup label="Sonidos de la página">' + BUILTIN.map(b => opt1('b:' + b[0], v, b[1])).join('') + '</optgroup>'
+      + '<optgroup label="🎲 Al azar de mi biblioteca">' + opt1('__all__', v, 'Todo lo que tenga') + opt1('__sfx__', v, 'Solo efectos de sonido') + opt1('__song__', v, 'Solo canciones') + '</optgroup>';
+    ['sfx', 'song', 'link'].forEach(k => {
+      const l = S.items.filter(x => x.kind === k);
+      if(l.length) h += `<optgroup label="${SK[k]}">` + l.map(x => opt1(x.id, v, x.name)).join('') + '</optgroup>';
+    });
+    if(v && !v.startsWith('b:') && !v.startsWith('__') && !sGet(v)) h += opt1(v, v, '(ya no está en la biblioteca)');
+    return h;
+  }
+  function cBody(c){
+    const id = c.id, opts = [...new Set(parse())];
+    const extra = c.pick.filter(x => !opts.includes(x));
+    const labels = opts.map(o => `<label><input type="checkbox" data-c="${id}" data-pick="${esc(o)}"${c.pick.includes(o) ? ' checked' : ''}><span>${esc(o)}</span></label>`)
+      .concat(extra.map(o => `<label><input type="checkbox" data-c="${id}" data-pick="${esc(o)}" checked><span>${esc(o)} (fuera de la lista actual)</span></label>`)).join('');
+    const pool = c.trig === 'pick'
+      ? `<div class="pool"><div class="ph"><span>🎯 Lo activan: ${c.pick.filter(x => opts.includes(x)).length} de ${opts.length}</span><span class="mini"><button class="ghost small" data-op="pall" data-c="${id}" type="button">Todas</button><button class="ghost small" data-op="pnone" data-c="${id}" type="button">Ninguna</button></span></div>${labels ? `<div class="pl">${labels}</div>` : '<p class="help">La ruleta no tiene opciones todavía.</p>'}</div>`
+      : '';
+    return '<div class="cgrp">Cómo cuenta</div>'
+      + cTxt(c, 'name', 'Nombre', 'Ej: Reto de baile')
+      + cSel(c, 'mode', 'Dirección', [['down', 'Baja (cuenta regresiva)'], ['up', 'Sube (cuenta progresiva)']])
+      + cSel(c, 'fmt', 'Se muestra como', [['time', 'Reloj (m:ss)'], ['num', 'Número']])
+      + cVal(c, 'start', 'Empieza en')
+      + cVal(c, 'goal', 'Meta (al llegar suena el aviso)')
+      + cNumF(c, 'step', 'Cambia de a', 0.001)
+      + cNumF(c, 'interval', 'Cada cuántos segundos da un paso', 0.1)
+      + (c.fmt === 'time' ? '<p class="help" style="margin-top:0">En modo reloj puedes escribir segundos (90) o minutos y segundos (1:30). Con «cambia de a 1 cada 1 segundo» es un reloj normal.</p>' : '')
+      + `<p class="cwarn" data-warn="${id}">${esc(cWarn(c))}</p>`
+      + '<div class="cgrp">Cuándo se activa</div>'
+      + cSel(c, 'trig', 'Empieza', [['none', 'Solo a mano (con el botón ▶)'], ['any', 'Cuando salga cualquier opción'], ['pick', 'Cuando salga una de las que elija']])
+      + pool
+      + cSel(c, 'again', 'Si ya está contando y se activa otra vez', [['restart', 'Empezar de nuevo'], ['ignore', 'Ignorarlo y seguir igual'], ['add', 'Alargarlo (suma otra vuelta completa)']])
+      + '<div class="cgrp">Cómo se ve</div>'
+      + cChk(c, 'show', 'Mostrarlo en el cuadro del directo')
+      + cTxt(c, 'tpl', 'Texto', '{nombre}: {valor}')
+      + '<p class="help" style="margin-top:0">Puedes usar {nombre}, {valor}, {meta}, {inicio} y {opcion} (la que lo activó).</p>'
+      + cSel(c, 'style', 'Estilo', [['cap', 'Cápsula'], ['txt', 'Solo texto'], ['ring', 'Círculo con anillo de progreso']])
+      + cSel(c, 'font', 'Letra', [['eleg', 'Elegante (como el título)'], ['round', 'Redondeada'], ['dig', 'Digital']])
+      + cSel(c, 'pos', 'Dónde aparece', [['top', 'Arriba'], ['center', 'Al centro'], ['bottom', 'Abajo']])
+      + cRng(c, 'size', 'Tamaño', 3, 20, '')
+      + cCol(c, 'fg', 'Color del texto')
+      + cCol(c, 'bg', 'Color del fondo')
+      + cRng(c, 'bgA', 'Opacidad del fondo', 0, 100, '%')
+      + cCol(c, 'ac', 'Color de acento (borde, barra y anillo)')
+      + cChk(c, 'bar', 'Barra de progreso (en cápsula y texto)')
+      + '<div class="cgrp">Cuando termina</div>'
+      + cTxt(c, 'endText', 'Mensaje al terminar (vacío = deja el texto normal)', '¡Listo!')
+      + cNumF(c, 'keep', 'Dejarlo visible (segundos; 0 = quitarlo de inmediato)', 0, 1)
+      + cSel(c, 'snd', 'Sonido al terminar', [])  // se rellena abajo
+        .replace('></select>', '>' + cSndOpts(c.snd) + '</select>')
+      + '<p class="help" style="margin-top:0">Para usar tus propios audios o links, añádelos en la pestaña «Sonidos y links» y luego aparecen aquí. <button class="link" data-op="gosnd" data-c="' + id + '" type="button">Ir a Sonidos y links</button></p>'
+      + cRng(c, 'sndVol', 'Volumen de este sonido', 0, 100, '%')
+      + cNumF(c, 'sndRep', 'Repetir el sonido (veces)', 1, 1)
+      + cNumF(c, 'sndMax', 'Cortar el sonido a los (segundos; 0 = completo)', 0, 1)
+      + cNumF(c, 'tickLast', 'Tic en los últimos (pasos; 0 = sin tic)', 0, 1)
+      + `<div class="cbtns"><button class="ghost small" data-op="start" data-c="${id}" type="button">▶ Iniciar</button><button class="ghost small" data-op="pause" data-c="${id}" type="button">⏸ Pausar</button><button class="ghost small" data-op="stop" data-c="${id}" type="button">■ Detener</button><button class="ghost small" data-op="test" data-c="${id}" type="button">🔊 Probar sonido</button><button class="ghost small" data-op="dup" data-c="${id}" type="button">Duplicar</button><button class="ghost small danger" data-op="del" data-c="${id}" type="button">Eliminar</button></div>`;
+  }
+  const cSig = () => parse().join('\n') + '|' + S.items.map(x => x.id + ':' + x.name + ':' + x.kind).join(',');
+  function cRenderList(openId){
+    const open = new Set([...cList.querySelectorAll('details.rule[open]')].map(d => d.dataset.id));
+    if(openId) open.add(openId);
+    cList.innerHTML = C.defs.length
+      ? C.defs.map(c => `<details class="rule${c.on ? '' : ' off'}" data-id="${c.id}"${open.has(c.id) ? ' open' : ''}><summary><input type="checkbox" data-c="${c.id}" data-k="on"${c.on ? ' checked' : ''} aria-label="Activar este contador"><span class="nm">⏱ ${esc(c.name)}</span><span class="rsum" data-live="${c.id}"></span></summary><div class="rbody">${cBody(c)}</div></details>`).join('')
+      : '<p class="help">Todavía no tienes contadores. Pulsa «＋ Nuevo contador» para crear el primero.</p>';
+    C.sig = cSig();
+    cLive(true);
+  }
+  function cLive(force){
+    let n = 0;
+    C.defs.forEach(c => {
+      const r = C.run[c.id];
+      if(r && !r.done) n++;
+      const el = cList.querySelector('[data-live="' + c.id + '"]'); if(!el) return;
+      const t = !c.on ? 'apagado'
+        : !r ? (c.mode === 'down' ? 'baja ' : 'sube ') + cFmt(c.start, c.fmt) + ' → ' + cFmt(c.goal, c.fmt)
+        : r.done ? 'terminó'
+        : (r.paused ? 'en pausa · ' : 'contando · ') + cFmt(r.val, c.fmt);
+      if(force || el.textContent !== t) el.textContent = t;
+      const pb = cList.querySelector('[data-op="pause"][data-c="' + c.id + '"]');
+      if(pb){
+        const pt = r && r.paused ? '▶ Reanudar' : '⏸ Pausar';
+        if(pb.textContent !== pt) pb.textContent = pt;
+        pb.disabled = !(r && !r.done);
+      }
+      const sb = cList.querySelector('[data-op="stop"][data-c="' + c.id + '"]');
+      if(sb) sb.disabled = !r;
+    });
+    const tn = n ? String(n) : '';
+    if(cTabN.textContent !== tn) cTabN.textContent = tn;
+  }
+  function cRefreshWarn(c){
+    const w = cList.querySelector('[data-warn="' + c.id + '"]');
+    if(w) w.textContent = cWarn(c);
+  }
+
+  cList.addEventListener('input', e => {
+    const el = e.target, id = el.dataset.c; if(!id) return;
+    const c = cGet(id); if(!c) return;
+    if(el.dataset.pick != null){
+      c.pick = c.pick.filter(x => x !== el.dataset.pick);
+      if(el.checked) c.pick.push(el.dataset.pick);
+      const opts = [...new Set(parse())], sp = el.closest('.pool').querySelector('.ph span');
+      if(sp) sp.textContent = '🎯 Lo activan: ' + c.pick.filter(x => opts.includes(x)).length + ' de ' + opts.length;
+      cSave(); return;
+    }
+    const k = el.dataset.k; if(!k || el.dataset.kind === 'val') return;
+    if(el.type === 'checkbox') c[k] = el.checked;
+    else if(el.type === 'number' || el.type === 'range'){
+      const n = parseFloat(el.value); if(!isFinite(n)) return;
+      c[k] = n;
+      if(el.type === 'range'){ const o = el.parentNode.querySelector('.out'); if(o) o.textContent = Math.round(n) + (el.dataset.u || ''); }
+    } else c[k] = el.value;
+    cNorm(c);
+    const box = el.closest('details.rule');
+    if(k === 'on'){
+      if(box) box.classList.toggle('off', !c.on);
+      if(!c.on) cStop(c.id);
+    }
+    if(k === 'name' && box){ const nm = box.querySelector('summary .nm'); if(nm) nm.textContent = '⏱ ' + c.name; }
+    if(k === 'mode') cRefreshWarn(c);
+    cSave(); cLive(true); pushCnt();
+  });
+  cList.addEventListener('change', e => {
+    const el = e.target, id = el.dataset.c; if(!id || el.dataset.pick != null) return;
+    const c = cGet(id); if(!c) return;
+    const k = el.dataset.k; if(!k) return;
+    if(el.dataset.kind === 'val'){
+      const n = cParse(el.value, c.fmt);
+      if(isFinite(n)) c[k] = n;
+      el.value = cIn(c[k], c.fmt);
+      cNorm(c); cRefreshWarn(c); cSave(); cLive(true); pushCnt();
+      return;
+    }
+    if(el.type === 'number'){ cNorm(c); el.value = c[k]; cSave(); }
+    if(k === 'mode' || k === 'fmt' || k === 'trig'){
+      cNorm(c); cSave(); cRenderList();
+      const f = cList.querySelector('[data-c="' + id + '"][data-k="' + k + '"]'); if(f) f.focus();
+      pushCnt();
+    }
+  });
+  cList.addEventListener('click', e => {
+    const b = e.target.closest('[data-op]'); if(!b) return;
+    const id = b.dataset.c, c = cGet(id), op = b.dataset.op; if(!c) return;
+    if(op === 'gosnd'){ tabGo(1); return; }
+    if(op === 'start'){ unlock(); cStart(c, '', true); rtC('start', id); }
+    else if(op === 'pause'){
+      const r = C.run[id]; if(!r || r.done) return;
+      if(r.paused){ r.next += Date.now() - r.pausedAt; r.paused = false; cLogAdd('▶ «' + c.name + '» sigue'); }
+      else { r.paused = true; r.pausedAt = Date.now(); cLogAdd('⏸ «' + c.name + '» en pausa'); }
+      rtC('pause', id, r.paused);
+    }
+    else if(op === 'stop'){ cStop(id); rtC('stop', id); cLogAdd('■ «' + c.name + '» detenido'); }
+    else if(op === 'test'){ unlock(); setTimeout(() => cPlaySound(c).catch(x => cLogAdd('⚠ ' + (x && x.message ? x.message : x))), 80); return; }
+    else if(op === 'pall' || op === 'pnone'){
+      c.pick = op === 'pall' ? [...new Set(parse())] : [];
+      cSave(); cRenderList(id); return;
+    }
+    else if(op === 'dup'){
+      const n = cNorm(Object.assign({}, JSON.parse(JSON.stringify(c)), { id:cId(), name:(c.name + ' (copia)').slice(0, 40) }));
+      C.defs.splice(C.defs.indexOf(c) + 1, 0, n);
+      cSave(); cRenderList(n.id); return;
+    }
+    else if(op === 'del'){
+      if(!confirm('¿Eliminar el contador «' + c.name + '»?')) return;
+      cStop(id); C.defs = C.defs.filter(x => x.id !== id);
+      cSave(); cRenderList(); pushCnt(); return;
+    }
+    cLive(true); pushCnt();
+  });
+  $('#cAdd').addEventListener('click', () => {
+    const c = cNorm(Object.assign({}, JSON.parse(JSON.stringify(CDEF)), { id:cId(), name:'Contador ' + (C.defs.length + 1) }));
+    C.defs.push(c); cSave(); cRenderList(c.id);
+    const f = cList.querySelector('details[data-id="' + c.id + '"] [data-k="name"]');
+    if(f){ f.focus(); f.select(); }
+  });
+  $('#cStopAll').addEventListener('click', () => { C.run = {}; cLogAdd('■ Todos los contadores detenidos'); cLive(true); pushCnt(); });
+  cAuto.addEventListener('input', cSave);
+
+  function cInit(){
+    tabsInit();
+    cLoad(); cRenderList();
+    pushCnt(true);
+    setInterval(() => { cTick(); pushCnt(); cLive(); }, 200);
+    setInterval(() => {
+      if(cSig() === C.sig) return;
+      const a = document.activeElement;
+      if(a && cList.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) return;
+      cRenderList();
+    }, 700);
+  }
+
+  /* ---------- perfiles (presets) ---------- */
+  const PSTORE = 'ruleta-de-sayler-perfiles-v1';
+  const pChips=$('#pChips'), pName=$('#pName'), pState=$('#pState'), pNoteEl=$('#pNote');
+  const pSave=$('#pSave'), pSaveNew=$('#pSaveNew'), pBlank=$('#pBlank'), pDel=$('#pDel');
+  const pExport=$('#pExport'), pImport=$('#pImport'), pFile=$('#pFile');
+  const P = { list:[], active:null };
+  let pNoteT = null;
+  const clone = o => JSON.parse(JSON.stringify(o));
+  const pGet = id => P.list.find(p => p.id === id);
+  const pId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const pCount = t => t.split('\n').map(x => x.trim()).filter(Boolean).length;
+  function pNote(t){
+    pNoteEl.textContent = t; clearTimeout(pNoteT);
+    pNoteT = setTimeout(() => { pNoteEl.textContent = ''; }, 4500);
+  }
+  function pPersist(){
+    try{ localStorage.setItem(PSTORE, JSON.stringify(P)); return true; }
+    catch(e){ pNote('No se pudo guardar en este navegador. Usa «Exportar copia».'); return false; }
+  }
+  /* mapa de acciones reducido a las opciones del texto, siempre en el mismo orden */
+  function pMapFor(text, src){
+    const map = {};
+    [...new Set(text.split('\n').map(x => x.trim()).filter(Boolean))].forEach(o => {
+      const L = src && src[o]; if(Array.isArray(L) && L.length) map[o] = clone(L);
+    });
+    return map;
+  }
+  const pSnap = () => ({ text: optsEl.value, map: pMapFor(optsEl.value, V.map), snd: pMapFor(optsEl.value, S.map) });
+  const pSig = x => JSON.stringify({ text: x.text, map: pMapFor(x.text, x.map), snd: pMapFor(x.text, x.snd) });
+  function pDirty(){
+    const cur = pSig(pSnap()), a = pGet(P.active);
+    if(a) return pSig(a) !== cur;
+    return parse().length > 0 && !P.list.some(p => pSig(p) === cur);
+  }
+  function pUnique(name, exceptId){
+    let n = name, i = 2;
+    while(P.list.some(p => p.id !== exceptId && p.name.toLowerCase() === n.toLowerCase())) n = name + ' (' + (i++) + ')';
+    return n;
+  }
+  function pRender(){
+    pChips.innerHTML = P.list.length
+      ? P.list.map(p => `<button type="button" class="chip${p.id === P.active ? ' on' : ''}" data-id="${esc(p.id)}" aria-pressed="${p.id === P.active}">${esc(p.name)}<small>${pCount(p.text)}</small></button>`).join('')
+      : '<span class="help" style="margin:0">Todavía no tienes perfiles. Escribe tus opciones y pulsa «Guardar como nuevo».</span>';
+    pRefresh();
+  }
+  function pRefresh(){
+    const a = pGet(P.active), dirty = pDirty();
+    pSave.disabled = !a;
+    pDel.disabled = !a;
+    pState.textContent = a
+      ? 'Perfil activo: «' + a.name + '» · ' + (dirty ? 'tiene cambios sin guardar' : 'todo guardado')
+      : (parse().length ? 'Esta lista todavía no está guardada en ningún perfil.' : 'La lista está vacía.');
+    const on = pChips.querySelector('.chip.on'); if(on) on.classList.toggle('dirty', !!a && dirty);
+  }
+  function pApply(p){
+    if(busy){ pNote('Espera a que termine el giro para cambiar de perfil.'); return; }
+    if(p.id === P.active && !pDirty()) return;
+    if(pDirty() && !confirm(P.active && pGet(P.active)
+      ? 'Tienes cambios sin guardar en «' + pGet(P.active).name + '». ¿Cargar «' + p.name + '» y perderlos?'
+      : 'La lista actual no está guardada en ningún perfil. ¿Cargar «' + p.name + '» y perderla?')) return;
+    pendingRemove = null;
+    optsEl.value = p.text;
+    V.map = clone(pMapFor(p.text, p.map)); S.map = clone(pMapFor(p.text, p.snd)); sSave();
+    P.active = p.id; pName.value = p.name; pPersist();
+    renderPreview(); save(); vtsOpts(true); sOpts(true); pRender();
+    pNote('Perfil «' + p.name + '» cargado.');
+  }
+  pChips.addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if(!b) return;
+    const p = pGet(b.dataset.id); if(p) pApply(p);
+  });
+  pSave.addEventListener('click', () => {
+    const a = pGet(P.active); if(!a) return;
+    const s = pSnap(), nm = pName.value.trim();
+    a.text = s.text; a.map = s.map; a.snd = s.snd; a.updated = Date.now();
+    if(nm) a.name = pUnique(nm, a.id);
+    pName.value = a.name;
+    if(pPersist()) pNote('Guardado en «' + a.name + '».');
+    pRender();
+  });
+  pSaveNew.addEventListener('click', () => {
+    if(!parse().length){ pNote('Escribe al menos una opción antes de guardar.'); optsEl.focus(); return; }
+    const s = pSnap(), nm = pUnique(pName.value.trim() || 'Perfil ' + (P.list.length + 1));
+    const p = { id:pId(), name:nm, text:s.text, map:s.map, snd:s.snd, updated:Date.now() };
+    P.list.push(p); P.active = p.id; pName.value = nm;
+    if(pPersist()) pNote('Perfil «' + nm + '» creado.');
+    pRender();
+  });
+  pBlank.addEventListener('click', () => {
+    if(busy){ pNote('Espera a que termine el giro.'); return; }
+    if(pDirty() && !confirm('Hay cambios sin guardar. ¿Empezar una lista en blanco y perderlos?')) return;
+    pendingRemove = null; optsEl.value = ''; V.map = {}; S.map = {}; sSave();
+    P.active = null; pName.value = ''; pPersist();
+    renderPreview(); save(); vtsOpts(true); sOpts(true); pRender(); pName.focus();
+  });
+  pDel.addEventListener('click', () => {
+    const a = pGet(P.active); if(!a) return;
+    if(!confirm('¿Eliminar el perfil «' + a.name + '»? La lista que tienes ahora en pantalla no se borra.')) return;
+    P.list = P.list.filter(p => p.id !== a.id); P.active = null; pName.value = '';
+    pPersist(); pRender(); pNote('Perfil eliminado.');
+  });
+  pExport.addEventListener('click', () => {
+    if(!P.list.length){ pNote('No hay perfiles para exportar.'); return; }
+    const blob = new Blob([JSON.stringify({ app:'ruleta-de-sayler', version:1, perfiles:P.list }, null, 2)], { type:'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'perfiles-ruleta.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    pNote('Copia descargada.');
+  });
+  pImport.addEventListener('click', () => pFile.click());
+  pFile.addEventListener('change', () => {
+    const f = pFile.files && pFile.files[0]; pFile.value = '';
+    if(!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try{
+        const d = JSON.parse(r.result), src = Array.isArray(d) ? d : d.perfiles;
+        if(!Array.isArray(src)) throw 0;
+        let n = 0;
+        src.forEach(x => {
+          if(!x || typeof x.text !== 'string' || !x.name) return;
+          const map = {};
+          Object.keys(x.map || {}).forEach(k => {
+            if(Array.isArray(x.map[k])) map[k] = x.map[k].filter(a => a && typeof a === 'object' && typeof a.t === 'string');
+          });
+          P.list.push({ id:pId(), name:pUnique(String(x.name).slice(0, 40)), text:x.text, map:pMapFor(x.text, map), snd:pMapFor(x.text, x.snd && typeof x.snd === 'object' ? x.snd : {}), updated:Date.now() });
+          n++;
+        });
+        pPersist(); pRender();
+        pNote(n ? n + (n === 1 ? ' perfil importado.' : ' perfiles importados.') : 'El archivo no tenía perfiles válidos.');
+      }catch(e){ pNote('No pude leer ese archivo.'); }
+    };
+    r.readAsText(f);
+  });
+  optsEl.addEventListener('input', pRefresh);
+  function presetsInit(){
+    try{
+      const d = JSON.parse(localStorage.getItem(PSTORE));
+      if(d && Array.isArray(d.list)){
+        P.list = d.list.filter(p => p && p.id && p.name && typeof p.text === 'string').map(p => ({ id:String(p.id), name:String(p.name), text:p.text, map:p.map && typeof p.map === 'object' ? p.map : {}, snd:p.snd && typeof p.snd === 'object' ? p.snd : {}, updated:p.updated || 0 }));
+        P.active = pGet(d.active) ? d.active : null;
+      }
+    }catch(e){}
+    const a = pGet(P.active); if(a) pName.value = a.name;
+    pRender();
+    setInterval(pRefresh, 800);
+  }
+
+  /* ---------- inicio ---------- */
+  load();
+  applySettings();
+  if(IS_POPUP){
+    audio(); updateGate();
+    drawWheel(mainCanvas, parse());
+    let tries = 0;
+    const hello = () => { if(!gotSync && tries++ < 30){ send({type:'hello'}); setTimeout(hello, 1500); } };
+    hello();
+    setInterval(updateGate, 700);
+  } else {
+    renderPreview();
+    sInit();
+    presetsInit();
+    cInit();
+    setStatus('off');
+    connectTik();
+    vtsInit();
+    updateStats(); pushIdle(true);
+    setInterval(() => { updateStats(); pushIdle(); processQueue(); }, 400);
+    rtInit();
+    if(!IS_LIVE && window.SaylerSync) SaylerSync.mount($('#synBox'), { skey:'ruleta-de-sayler-sync', keys:[STORE, SKEY, CKEY] });
+    window.addEventListener('beforeunload', () => { try{ if(popupWin && !popupWin.closed) popupWin.close(); }catch(e){} });
+  }
+  /* enlace fijo: cuando llega una configuración nueva se aplica sin recargar */
+  /* ---------- órdenes en tiempo real: panel → enlace ---------- */
+  function rtC(op, id, paused){ if(!IS_LIVE && !IS_POPUP && window.SaylerSync) SaylerSync.cmd('cnt', { op, id, paused }); }
+  const rsQ = [];
+  function rsDrain(){
+    if(!rsQ.length) return;
+    if(busy){ setTimeout(rsDrain, 400); return; }
+    runSpin(rsQ.shift());
+    setTimeout(rsDrain, 400);
+  }
+  function rtInit(){
+    if(!IS_LIVE || !window.SaylerSync || !SaylerSync.onCmd) return;
+    SaylerSync.onCmd((t, d) => {
+      if(t === 'spin' && d && Array.isArray(d.opts) && d.opts.length){ rsQ.push(d); rsDrain(); }
+      else if(t === 'hide'){ hideWheel(); }
+      else if(t === 'sim' && d){ onTikEvent(d); }
+      else if(t === 'cnt' && d){
+        const c = cGet(d.id); if(!c) return;
+        if(d.op === 'start') cStart(c, '', true);
+        else if(d.op === 'stop') cStop(d.id);
+        else if(d.op === 'pause'){
+          const r = C.run[d.id]; if(!r || r.done) return;
+          if(d.paused && !r.paused){ r.paused = true; r.pausedAt = Date.now(); }
+          else if(!d.paused && r.paused){ r.next += Date.now() - r.pausedAt; r.paused = false; }
+        }
+      }
+    });
+  }
+  window.__synApply = () => {
+    if(IS_POPUP) return;
+    try{ load(); applySettings(); renderPreview(); sLoad(); sOpts(true); cLoad(); cRenderList(); vtsOpts(true); pushIdle(true); }
+    catch(e){ console.error(e); }
+  };
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => {
+    if(IS_POPUP){ if(!busy) drawWheel(mainCanvas, popupOpts.length ? popupOpts : parse()); } else renderPreview();
+  });
+})();
+</script>
+</body>
+</html>

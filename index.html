@@ -27,6 +27,7 @@ h2{font:italic 600 1.7rem 'Cormorant Garamond',serif;margin:0 0 .6rem}p{margin:.
 .lk{display:grid;grid-template-columns:1fr auto;gap:6px 8px;margin:0 0 14px}.lk b{grid-column:1/-1}.lk small{grid-column:1/-1;opacity:.7;font-weight:500}
 input,button.a{font:inherit;color:var(--pearl);background:rgba(255,255,255,.1);border:1px solid rgba(247,240,255,.3);border-radius:12px;padding:8px 12px;min-width:0}button.a{cursor:pointer}button.a:hover{background:rgba(255,255,255,.2)}
 .row{display:flex;gap:8px;flex-wrap:wrap}#msg{color:#ffd9ec;min-height:1.2em}
+.mods{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin:8px 0 12px}.mod{display:flex;align-items:center;gap:10px;padding:10px 14px;border:1px solid rgba(247,240,255,.25);border-radius:14px;background:rgba(255,255,255,.07);cursor:pointer;font-weight:700}.mod input{width:18px;height:18px;accent-color:#f4b3d6}.mod small{margin-left:auto;opacity:.7;font-weight:500}.mod.off{opacity:.55}.tb.off::after{content:' ⏻';opacity:.6}
 </style></head><body>
 <div class="top"><h1>Directo de Sayler</h1>
 <nav class="tabs"><button class="tb" data-t="ov">🎀 Overlays</button><button class="tb" data-t="bb">🧚 Bebé pelón</button><button class="tb" data-t="rl">🎡 Ruleta</button><button class="tb" data-t="ln">🔗 Enlaces y respaldo</button></nav></div>
@@ -36,6 +37,7 @@ input,button.a{font:inherit;color:var(--pearl);background:rgba(255,255,255,.1);b
 <iframe class="fr" id="f-rl" src="ruleta.html" title="Ruleta"></iframe>
 <section id="ln">
  <div class="box" id="first" hidden><h2>Primera vez aquí</h2><p>Este navegador todavía no tiene tu configuración. Si subiste <code>config/respaldo.json</code> al repo puedes cargarla ahora.</p><button class="a" id="repo0">⬇ Cargar configuración del repo</button></div>
+ <div class="box"><h2>Interruptores</h2><p>Apaga lo que no vayas a usar: un módulo apagado <b>no se conecta a TikFinity/Twitch, no cuenta nada y no se ve</b> (ni aquí ni en su enlace de OBS/TikTok). Se guarda y le llega solo al enlace; lo que ya llevaba guardado no se pierde.</p><div class="mods" id="mods"></div><div class="row"><button class="a" id="allon">Encender todo</button><button class="a" id="alloff">Apagar todo</button></div></div>
  <div class="box"><h2>Enlaces para OBS y TikTok (fondo transparente)</h2><p>Pega cada enlace como fuente de navegador (OBS) o enlace web (TikTok LIVE Studio). No llevan fondo verde. Cada uno funciona por separado.</p><div id="links"></div></div>
  <div class="box"><h2>Respaldo de tu configuración</h2>
  <p>Tu configuración vive en este navegador (las mismas claves de tus páginas de antes). En otra computadora, en OBS o en GitHub Pages no aparece sola: expórtala aquí y súbela al repo como <code>config/respaldo.json</code>; los enlaces la cargan solos cuando cambia.</p>
@@ -55,6 +57,14 @@ function show(t){tab=t;ls('saylerHubTab',t);document.querySelectorAll('.tb').for
 document.querySelector('.tabs').onclick=e=>{const b=e.target.closest('.tb');if(b)show(b.dataset.t)};
 $('#dockbar').onclick=()=>{dock=false;ls('saylerHubDock','0');show(tab)};$('#dockbtn').onclick=()=>{dock=true;ls('saylerHubDock','1');show(tab)};
 F.bb.addEventListener('load',mode);show(tab);
+/* interruptores */
+const MODS=[['metas','🎯 Metas','overlay'],['barra','📊 Barra','overlay'],['cont','🔢 Contador','overlay'],['time','⏳ Temporizador','overlay'],['ev','💬 Últimos eventos','overlay'],['bebe','🧚 Bebé pelón','bebé'],['ruleta','🎡 Ruleta','ruleta']],TABOF={ov:['metas','barra','cont','time','ev'],bb:['bebe'],rl:['ruleta']};
+function drawMods(){const m=SaylerMods.all();$('#mods').innerHTML=MODS.map(([k,t,g])=>`<label class="mod${m[k]===0?' off':''}"><input type="checkbox" data-m="${k}"${m[k]===0?'':' checked'}>${t}<small>${m[k]===0?'apagado':'activo'}</small></label>`).join('');
+ document.querySelectorAll('.tb').forEach(b=>{const l=TABOF[b.dataset.t];if(l)b.classList.toggle('off',l.every(k=>m[k]===0))})}
+function sendMods(){Object.values(F).forEach(f=>{try{f.contentWindow.postMessage({t:'mods',mods:SaylerMods.all()},'*')}catch(e){}});drawMods()}
+$('#mods').onchange=e=>{const i=e.target.closest('[data-m]');if(!i)return;SaylerMods.set(i.dataset.m,i.checked);sendMods()};
+$('#allon').onclick=()=>{SaylerMods.setAll(Object.fromEntries(SaylerMods.ids.map(k=>[k,1])));sendMods()};$('#alloff').onclick=()=>{if(confirm('¿Apagar todos los módulos? Dejarán de contar y de verse hasta que los vuelvas a encender.')){SaylerMods.setAll(Object.fromEntries(SaylerMods.ids.map(k=>[k,0])));sendMods()}};
+drawMods();F.ov.addEventListener('load',sendMods);F.bb.addEventListener('load',sendMods);F.rl.addEventListener('load',sendMods);
 /* enlaces */
 const base=location.href.split('#')[0].replace(/[^/]*$/,'');
 const syncCode=()=>{try{const s=JSON.parse(localStorage.ovlS).sync;return s&&s.on&&s.code?s.code:''}catch(e){return ''}};

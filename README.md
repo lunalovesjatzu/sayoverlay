@@ -68,3 +68,16 @@ Si el repo es público, ese archivo (códigos de Ko-fi/ntfy, imágenes) lo puede
 - **Bebé pelón**: los botones de prueba, entregar pedido, saltar y los de acción también ocurren en el enlace.
 - Todo esto requiere la casilla **🔗 Enlace fijo** activa y el panel abierto. Las órdenes viajan por ntfy.sh en el canal `CODIGO-cmd`.
 - Ojo: ntfy.sh gratis tiene un límite de mensajes por día; si pasas muchas pruebas seguidas o cambias mucho la configuración con imágenes, puede dejar de entregar por un rato.
+
+## Un solo motor + espejo (novedad)
+- **El enlace (OBS/TikTok) es el único que cuenta.** Mientras está en marcha, la vista previa del panel (overlays, bebé, ruleta) **no se conecta a TikFinity/Twitch ni cuenta nada**: solo espeja el estado del enlace (tiempo, metas, contadores de la ruleta, giros, pedidos del bebé, últimos eventos). Por eso ya no se desfasan (38 h vs 41 h, 432 vs 500).
+- Si el enlace se apaga (o nunca se abrió), el panel retoma con el último estado y cuenta por su cuenta; cuando el enlace vuelve, toma el estado más nuevo (si su almacenamiento se borró, el panel se lo devuelve).
+- **Se guarda aunque no uses los enlaces:** el estado vive en el navegador de cada página y se copia al panel. Los contadores de la ruleta ahora también se guardan (antes solo vivían en memoria y volvían al valor inicial al recargar). Con la página cerrada el tiempo/contadores no avanzan. El temporizador sigue arrancando en pausa.
+- **Menos mensajes a ntfy.sh** (el plan gratis tiene tope diario, y era la razón de que «al inicio funciona y luego se desconfigura»): se quitó el envío de progreso cada 4 s; el estado viaja en lotes (cada ≥12 s, más espaciado si ya se mandaron muchos en la hora, y pausa de 10 min si ntfy responde 429).
+- Si tu stream es largo y activo, lo ideal es un ntfy propio (`window.__SYNC_HOST`).
+
+## Interruptores
+En «Enlaces y respaldo → Interruptores» enciendes/apagas Metas, Barra, Contador, Temporizador, Eventos, Bebé y Ruleta. Un módulo apagado no se conecta, no cuenta, no se ve (ni en el panel ni en su enlace) y conserva lo que ya llevaba.
+
+## Si un contador de la ruleta «se queda en el inicio»
+Revisa «Si ya está contando y se activa otra vez»: con «Empezar de nuevo» cada giro lo reinicia. Usa «Ignorarlo» o «Alargarlo».

@@ -21,7 +21,7 @@
  /* el hub cambia entre vista completa y mini (dock del bebé) */
  addEventListener('message',e=>{const d=e.data;if(d&&d.sayMode)document.body.classList.toggle('mini',d.sayMode==='mini')});
  /* 4) Configuración local: mismas claves de siempre + respaldo */
- const PFX=/^(ovl|angelito-sayler|ruleta-de-sayler)/,SKIP=/^(ovl-st-|ovlC)/;
+ const PFX=/^(ovl|angelito-sayler|ruleta-de-sayler|sayler-mods)/,SKIP=/^(ovl-st-|ovlC|ovlM|ruleta-de-sayler-run)/;
  const C=window.SaylerCfg={
   dump(){const o={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(PFX.test(k)&&!SKIP.test(k))o[k]=localStorage.getItem(k)}return o},
   load(o){Object.keys(o||{}).forEach(k=>{if(PFX.test(k))try{localStorage.setItem(k,o[k])}catch(e){}})},
@@ -38,7 +38,7 @@
 (function(){
  const W=window.__W,H=window.__SYNC_HOST||'ntfy.sh',web=/^https?:\/\//.test(H),HU=web?H:'https://'+H,WU=web?H.replace(/^http/,'ws'):'wss://'+H;
  const hp=new URLSearchParams(location.hash.slice(1)),CODE=hp.get('s')||'',LIVE=hp.has('live')&&!!CODE&&!window.__NOSYNC;
- const PFX=/^(angelito-sayler|ruleta-de-sayler)/,SZ=2800,MIN=3000,MAXIMG=300000,TOK='@img:';
+ const PFX=/^(angelito-sayler|ruleta-de-sayler|sayler-mods)/,SZ=2800,MIN=3000,MAXIMG=300000,TOK='@img:';
  /* lo que NO viaja: el enlace conserva lo suyo (progreso de la ruleta) y fuerza la conexión con TikFinity */
  const RULES={'angelito-sayler-v1':{drop:['on'],force:{on:1}},'ruleta-de-sayler-v1':{drop:['st','tikOn'],force:{tikOn:true}}};
  const sleep=ms=>new Promise(r=>W.setTimeout(r,ms));
@@ -77,7 +77,7 @@
    applyBundle(res);try{localStorage.setItem('saylerRx:'+CODE,JSON.stringify({cv,cfg:t}))}catch(e){}
    if(!miss.length){try{const keep=new Set((t.match(/@img:[a-z0-9]+/g)||[]).map(x=>x.slice(TOK.length)));
     for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('saylerImg:')&&!keep.has(k.slice(10)))localStorage.removeItem(k)}}catch(e){}}
-   try{window.__synApply&&window.__synApply()}catch(e){console.error(e)}}
+   try{window.__synApply&&window.__synApply()}catch(e){console.error(e)}try{window.SaylerMods&&SaylerMods.fire()}catch(e){}}
   /* al abrir: la última copia que recibió (sirve aunque no haya internet) */
   try{const rx=JSON.parse(localStorage.getItem('saylerRx:'+CODE));if(rx&&rx.cfg){cvBest=+rx.cv||0;const res=resolve(JSON.parse(rx.cfg),[]);lastApplied=JSON.stringify(res);applyBundle(res)}}catch(e){}
   const G={};let ws=null,wt=0;
@@ -118,8 +118,8 @@
   const sv=()=>{try{localStorage.setItem(o.skey,JSON.stringify(st))}catch(e){}};sv();
   const say=t=>{try{o.onStatus&&o.onStatus(t)}catch(e){}},SK='saylerPub:'+st.code;
   const loadSent=()=>{try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return{}}},saveSent=s=>{try{localStorage.setItem(SK,JSON.stringify(s))}catch(e){}};
-  const collect=()=>{const b={};o.keys.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)b[k]=v}catch(e){}});return b};
-  async function post(body){for(let a=0;a<8;a++){try{const r=await fetch(HU+'/'+encodeURIComponent(st.code),{method:'POST',body});if(r.ok)return;if(r.status===429){await sleep(45000);continue}if(r.status<500)break}catch(e){}await sleep(a<2?2500:6000)}throw new Error('post')}
+  const collect=()=>{const b={};o.keys.concat(['sayler-mods']).forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)b[k]=v}catch(e){}});return b};
+  async function post(body){for(let a=0;a<8;a++){try{const r=await fetch(HU+'/'+encodeURIComponent(st.code),{method:'POST',body});if(r.ok)return;if(r.status!==429&&r.status<500)break}catch(e){}await sleep(a<2?2500:6000)}throw new Error('post')}
   async function parts(t,id,text,label){const n=Math.ceil(text.length/SZ);for(let i=0;i<n;i++){if(label&&n>6&&i%6===0)say(label+' ('+i+'/'+n+')');await post(JSON.stringify({v:2,t,id,i,n,d:text.slice(i*SZ,(i+1)*SZ)}))}}
   /* órdenes al enlace: en fila (llegan en orden) y con reintentos hasta que ntfy las acepta */
   let cq=Promise.resolve();
@@ -130,7 +130,7 @@
   let lastTxt='',busy=0,timer=0;
   const soon=now=>{W.clearTimeout(timer);if(!st.on)return;timer=W.setTimeout(()=>pubNow(now),now?200:600)};
   async function pubNow(force){if(!st.on||busy)return;const media={},sk={n:0},txt=JSON.stringify(strip(collect(),media,sk)),sent=loadSent(),now=Date.now();
-   const need=Object.keys(media).filter(h=>!sent[h]||now-sent[h]>72*36e5);
+   const need=Object.keys(media).filter(h=>!sent[h]||now-sent[h]>6*36e5);
    if(txt===lastTxt&&!force&&!need.length)return;busy=1;let ok=0;const skipped=sk.n;
    try{let i=0;for(const h of need){i++;await parts('m',h,media[h],'⏳ Subiendo imagen '+i+' de '+need.length);sent[h]=Date.now();saveSent(sent)}
     await parts('c',Date.now(),await zipTxt(txt));lastTxt=txt;ok=1;
@@ -149,26 +149,102 @@
   const q=s=>el.querySelector(s),ck=q('.synck'),url=q('.synurl'),msg=q('.synmsg');
   const P=publisher({...o,onStatus:t=>{msg.textContent=t}});cur=P;
   const base=location.href.split('#')[0],draw=()=>{url.value=base+'#live'+(P.on?'&s='+encodeURIComponent(P.code):'')};
-  ck.checked=!!P.on;draw();ck.onchange=()=>{P.setOn(ck.checked);draw()};
+  const upGo=()=>{try{P.on?SaylerUp.panel(P.code):SaylerUp.stop()}catch(e){}};upGo();
+  ck.checked=!!P.on;draw();ck.onchange=()=>{P.setOn(ck.checked);draw();upGo()};
   q('.sycp').onclick=e=>{const b=e.currentTarget;try{navigator.clipboard.writeText(url.value)}catch(x){url.select();document.execCommand('copy')}b.textContent='✔ Copiado';W.setTimeout(()=>b.textContent='📋 Copiar enlace',1500)};
   P.start();return P};
+})();
 
- /* ===== SaylerNet: el ENLACE cuenta y publica su estado; el PANEL lo copia (así nunca se separan) ===== */
- const QK='saylerQ',dayS=()=>new Date().toISOString().slice(0,10);
- const qadd=()=>{try{let q=JSON.parse(localStorage.getItem(QK))||{};if(q.d!==dayS())q={d:dayS(),n:0};q.n++;localStorage.setItem(QK,JSON.stringify(q))}catch(e){}};
- const qget=()=>{try{const q=JSON.parse(localStorage.getItem(QK));return q&&q.d===dayS()?q.n:0}catch(e){return 0}};
- async function postN(topic,body){for(let a=0;a<4;a++){try{const r=await fetch(HU+'/'+encodeURIComponent(topic),{method:'POST',body});if(r.ok){qadd();return true}if(r.status===429){await sleep(45000);continue}if(r.status<500)return false}catch(e){}await sleep(2500)}return false}
- let pq=Promise.resolve();
- window.SaylerNet={quota:qget,
-  pub(code,name,ts,obj){const id=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-   return pq=pq.then(async()=>{const z=await zipTxt(JSON.stringify(obj)),n=Math.ceil(z.length/3400)||1;for(let i=0;i<n;i++){if(!await postN(code+'-st',JSON.stringify({v:4,n:name,ts,id,i,c:n,d:z.slice(i*3400,(i+1)*3400)})))return false}return true}).catch(()=>false)},
-  sub(code,name,cb){const G={};let ws=null,wt=0,last=0;
-   const open=()=>{W.clearTimeout(wt);let w;try{w=new WebSocket(WU+'/'+encodeURIComponent(code+'-st')+'/ws?since='+(last?Math.max(0,last-5):'12h'))}catch(e){wt=W.setTimeout(open,5000);return}
-    ws=w;let alive=Date.now();const ck=W.setInterval(()=>{if(ws!==w){W.clearInterval(ck);return}if(Date.now()-alive>130000){W.clearInterval(ck);ws=null;w.onclose=null;try{w.close()}catch(e){}open()}},20000);
-    w.onopen=()=>{alive=Date.now()};
-    w.onmessage=async ev=>{alive=Date.now();let o,x;try{o=JSON.parse(ev.data);if(o.event!=='message')return;x=JSON.parse(o.message)}catch(e){return}
-     if(o.time>last)last=o.time;if(!x||x.v!==4||x.n!==name)return;const g=G[x.id]||(G[x.id]={p:{},c:x.c});g.p[x.i]=x.d;if(Object.keys(g.p).length<g.c)return;delete G[x.id];
-     try{const z=Array.from({length:g.c},(_,i)=>g.p[i]).join('');cb(JSON.parse(await unzipTxt(z)),x.ts)}catch(e){}};
-    w.onclose=()=>{W.clearInterval(ck);if(ws===w)wt=W.setTimeout(open,3000)}};
-   open()}};
+/* 6) Interruptores por módulo + canal «arriba» (enlace → panel).
+      - SaylerMods: apaga/enciende cada módulo (metas, barra, contador, tiempo, eventos, bebé, ruleta). Apagado = no se conecta, no cuenta, no se ve.
+      - SaylerUp: el ENLACE (OBS/TikTok) es el único motor que cuenta; publica su estado por ntfy con pocos mensajes
+        (en lote, con freno si ntfy.sh pone límite) y el PANEL solo lo espeja. Así la vista previa muestra lo mismo que el enlace
+        y nada se cuenta doble. Si el enlace se apaga, el panel retoma con el último estado y el enlace al volver toma el más nuevo. */
+(function(){
+ const MK='sayler-mods',ID=['metas','barra','cont','time','ev','bebe','ruleta'],fl=[];
+ const M=window.SaylerMods={ids:ID,
+  all(){let o={};try{o=JSON.parse(localStorage.getItem(MK))||{}}catch(e){}return o},
+  on(id){const v=M.all()[id];return !(v===0||v===false)},
+  set(id,v){const o=M.all();o[id]=v?1:0;try{localStorage.setItem(MK,JSON.stringify(o))}catch(e){}return o},
+  setAll(o){const c=M.all();ID.forEach(k=>{if(o&&o[k]!=null)c[k]=o[k]?1:0});try{localStorage.setItem(MK,JSON.stringify(c))}catch(e){}return c},
+  watch(f){fl.push(f)},fire(){fl.forEach(f=>{try{f()}catch(e){console.error(e)}})}};
+ addEventListener('storage',e=>{if(e.key===MK)M.fire()});
+ addEventListener('message',e=>{const d=e.data;if(d&&d.t==='mods'){M.fire();try{window.SaylerSync&&SaylerSync.changed()}catch(x){}}});
+})();
+
+(function(){
+ const W=window.__W,H=window.__SYNC_HOST||'ntfy.sh',web=/^https?:\/\//.test(H),HU=web?H:'https://'+H,WU=web?H.replace(/^http/,'ws'):'wss://'+H;
+ const DEV=Math.random().toString(36).slice(2,9),ALIVE=9*60e3,HB=4*60e3,SZ=2800,ADOPT=4500;
+ const sleep=ms=>new Promise(r=>W.setTimeout(r,ms));
+ const b64=u=>{let s='';for(let i=0;i<u.length;i+=0x8000)s+=String.fromCharCode.apply(null,u.subarray(i,i+0x8000));return btoa(s)},unb64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
+ async function zip(t){try{if(window.CompressionStream){const r=await new Response(new Blob([t]).stream().pipeThrough(new CompressionStream('deflate'))).arrayBuffer();return 'z'+b64(new Uint8Array(r))}}catch(e){}return 'p'+btoa(unescape(encodeURIComponent(t)))}
+ async function unzip(s){if(s[0]=='z')return await new Response(new Blob([unb64(s.slice(1))]).stream().pipeThrough(new DecompressionStream('deflate'))).text();return decodeURIComponent(escape(atob(s.slice(1))))}
+ let role='',CODE='',ws=null,wt=0,wopen=0,lastT=0,aliveAt=0,byeAt=0,wasAlive=false,status='',ready=0,adoptOn=0,hbT=0,adT=0,bootF=0,hbF=0;
+ const prov={},hand={},alL=[],stL=[],G={},snapSeen={},evSeen=new Map(),seedSeen=new Set(),best={},posts=[];
+ let dirty={},qEv=[],qJob=[],qSpin=[],pubT=0,lastPub=0,busy=0,hold=0;
+ const stat=t=>{if(status===t)return;status=t;stL.forEach(f=>{try{f(t)}catch(e){}})};
+ const safe=(p)=>{try{return p.get()}catch(e){return null}};
+ const alive=()=>role==='panel'&&aliveAt>byeAt&&Date.now()-aliveAt<ALIVE;
+ function chkAlive(){const a=alive();if(a!==wasAlive){wasAlive=a;alL.forEach(f=>{try{f(a)}catch(e){console.error(e)}})}}
+ W.setInterval(chkAlive,15000);
+
+ /* ---- salida ---- */
+ async function post(body){const u=HU+'/'+encodeURIComponent(CODE+'-up');
+  for(let a=0;a<4;a++){try{const r=await fetch(u,{method:'POST',body});if(r.ok){posts.push(Date.now());return true}if(r.status===429){hold=Date.now()+10*60e3;stat('limit');return false}if(r.status<500)return false}catch(e){}await sleep([700,1500,3000][a]||5000)}return false}
+ async function sendB(B){B.r=role;B.dev=DEV;const z=await zip(JSON.stringify(B)),n=Math.ceil(z.length/SZ),m=DEV+Date.now().toString(36);
+  for(let i=0;i<n;i++){if(!await post(JSON.stringify({v:5,m,i,n,d:z.slice(i*SZ,(i+1)*SZ)})))return false}lastPub=Date.now();return true}
+ /* freno: normal 1 mensaje cada 12 s (30 s tras 25 en la hora); si ya se mandaron muchos en la última hora se espacia más (ntfy.sh gratis tiene un tope diario) */
+ const gap=()=>{const t=Date.now();while(posts.length&&posts[0]<t-36e5)posts.shift();const n=posts.length;return n>90?240e3:n>50?90e3:n>25?30e3:12e3};
+ function plan(u){if(role!=='link'||!ready)return;W.clearTimeout(pubT);const t=Date.now(),w=Math.max(hold-t,u?Math.max(0,lastPub+1500-t):Math.max(0,lastPub+gap()-t),u?300:3000);pubT=W.setTimeout(flush,w)}
+ async function flush(){if(role!=='link'||busy)return;if(hold>Date.now()){plan();return}
+  busy=1;const B={},keys=Object.keys(dirty);dirty={};
+  keys.forEach(k=>{const p=prov[k];if(!p)return;const g=safe(p);if(g){B.st=B.st||{};B.st[k]={at:g.at||0,d:g.d,snap:Date.now()}}});
+  if(qEv.length)B.ev=qEv.splice(0,40);if(qJob.length)B.job=qJob.splice(0);if(qSpin.length)B.spin=qSpin.splice(0);
+  if(B.st){if(bootF){B.boot=1;bootF=0}if(hbF){B.hb=1;hbF=0}}
+  if(B.st||B.ev||B.job||B.spin){let ok=false;try{ok=await sendB(B)}catch(e){}
+   if(ok)stat('ok');else{keys.forEach(k=>dirty[k]=1);stat(hold>Date.now()?'limit':'error')}}
+  busy=0;if(Object.keys(dirty).length||qEv.length)plan()}
+ const dirtyAll=()=>Object.keys(prov).forEach(k=>dirty[k]=1);
+
+ /* ---- entrada ---- */
+ function open(){W.clearTimeout(wt);if(!CODE)return;let w;
+  try{w=new WebSocket(WU+'/'+encodeURIComponent(CODE+'-up')+'/ws?since='+(lastT?Math.max(0,lastT-30):'12h'))}catch(e){wt=W.setTimeout(open,5000);return}
+  ws=w;let al=Date.now();if(!wopen)wopen=Date.now();
+  const ck=W.setInterval(()=>{if(ws!==w){W.clearInterval(ck);return}if(Date.now()-al>130000){W.clearInterval(ck);ws=null;w.onclose=null;try{w.close()}catch(e){}open()}},20000);
+  w.onopen=()=>{al=Date.now()};w.onmessage=ev=>{al=Date.now();onMsg(ev)};
+  w.onclose=()=>{W.clearInterval(ck);if(ws===w)wt=W.setTimeout(open,3000)}}
+ addEventListener('online',()=>{if(!CODE)return;if(ws){ws.onclose=null;try{ws.close()}catch(e){}ws=null}open()});
+ async function onMsg(ev){let o,x;try{o=JSON.parse(ev.data);if(o.event!=='message')return;x=JSON.parse(o.message)}catch(e){return}
+  if(!x||x.v!==5||!(x.n>0))return;if(o.time>lastT)lastT=o.time;
+  const g=G[x.m]||(G[x.m]={n:x.n,p:{},done:0});if(g.done)return;g.p[x.i]=x.d;if(Object.keys(g.p).length<g.n)return;g.done=1;
+  const s=Array.from({length:g.n},(_,i)=>g.p[i]).join('');g.p=null;const ks=Object.keys(G);if(ks.length>80)delete G[ks[0]];
+  let B;try{B=JSON.parse(await unzip(s))}catch(e){return}if(!B||B.dev===DEV)return;handle(B,(o.time||0)*1000)}
+ function seedOut(k,cur){const key=k+':'+cur.at;if(seedSeen.has(key))return;seedSeen.add(key);sendB({seed:{k,at:cur.at,d:cur.d}}).catch(()=>{})}
+ function handle(B,tm){
+  const fresh=tm>wopen-25e3;
+  if(role==='panel'&&B.r==='link'){
+   if(B.bye)byeAt=Math.max(byeAt,tm);else aliveAt=Math.max(aliveAt,tm);chkAlive();
+   if(B.st)for(const k in B.st){const p=prov[k],x=B.st[k];if(!p||!x)continue;const cur=safe(p);
+    if(B.boot&&fresh&&cur&&(cur.at||0)>(x.at||0)+500){seedOut(k,cur);continue}
+    if((x.snap||0)>(snapSeen[k]||0)){snapSeen[k]=x.snap||0;if(!cur||alive()||(x.at||0)>=(cur.at||0)){try{p.set(x.at||0,x.d,{live:true})}catch(e){console.error(e)}}}}
+   if(fresh){['ev','job','spin'].forEach(t=>{if(B[t]&&hand[t])B[t].forEach(e=>{
+     if(t==='ev'){const sg=[e.p,e.k,e.n,e.v,e.x].join('|'),pr=evSeen.get(sg);if(pr&&tm-pr<6000)return;evSeen.set(sg,tm);if(evSeen.size>200)evSeen.delete(evSeen.keys().next().value)}
+     hand[t].forEach(f=>{try{f(e)}catch(x){console.error(x)}})})})}
+  }
+  if(role==='link'){
+   if(B.seed){const p=prov[B.seed.k],cur=p&&safe(p);if(p&&(B.seed.at||0)>((cur&&cur.at)||0)){try{p.set(B.seed.at,B.seed.d,{seed:true})}catch(e){console.error(e)}}}
+   else if(adoptOn&&B.r==='link'&&B.st)for(const k in B.st){const x=B.st[k];if(x&&(!best[k]||(x.at||0)>best[k].at))best[k]={at:x.at||0,d:x.d}}}}
+ function finishAdopt(){adoptOn=0;for(const k in best){const p=prov[k];if(!p)continue;const cur=safe(p);if(best[k].at>((cur&&cur.at)||0)){try{p.set(best[k].at,best[k].d,{boot:true})}catch(e){console.error(e)}}}}
+ function stop(){W.clearTimeout(wt);W.clearTimeout(pubT);W.clearInterval(hbT);if(ws){ws.onclose=null;try{ws.close()}catch(e){}ws=null}role='';CODE='';ready=0;adoptOn=0;aliveAt=byeAt=0;wopen=0;lastT=0;chkAlive()}
+ addEventListener('pagehide',()=>{if(role!=='link'||!CODE)return;try{fetch(HU+'/'+encodeURIComponent(CODE+'-up'),{method:'POST',keepalive:true,body:JSON.stringify({v:5,m:'b'+DEV,i:0,n:1,d:'p'+btoa(JSON.stringify({r:'link',dev:DEV,bye:1}))})})}catch(e){}});
+
+ const SU=window.SaylerUp={dev:DEV,
+  link(code){if(!code||(role==='link'&&CODE===code))return;stop();role='link';CODE=code;open();adoptOn=1;
+   W.setTimeout(()=>{if(role!=='link'||CODE!==code)return;finishAdopt();ready=1;bootF=1;dirtyAll();plan();hbT=W.setInterval(()=>{hbF=1;dirtyAll();plan()},HB)},ADOPT)},
+  panel(code){if(!code||(role==='panel'&&CODE===code))return;stop();role='panel';CODE=code;open()},
+  stop,provide(k,p){prov[k]=p},
+  dirty(k,u){if(role!=='link'||!prov[k])return;dirty[k]=1;plan(u)},
+  send(t,d){if(role!=='link'||!ready)return;(t==='ev'?qEv:t==='job'?qJob:qSpin).push(d);plan(t!=='ev')},
+  on(t,f){(hand[t]=hand[t]||[]).push(f)},onAlive(f){alL.push(f)},onStatus(f){stL.push(f)},
+  alive,role:()=>role,status:()=>status,mirror:()=>role==='panel'&&alive()};
 })();

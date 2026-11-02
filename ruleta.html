@@ -794,6 +794,10 @@ details.rule .rbody .help + .row{margin-top:12px}
   const {setTimeout,setInterval,clearTimeout,clearInterval} = window.__W, requestAnimationFrame = window.__W.raf;
   const $ = s => document.querySelector(s);
   const IS_POPUP = location.hash === '#directo', IS_LIVE = /^#live(&|$)/.test(location.hash);
+  /* motor único: el ENLACE cuenta; el panel solo espeja mientras el enlace está en marcha (MIR). MODOFF = el interruptor de la ruleta está apagado. */
+  const MIR = () => !IS_LIVE && !IS_POPUP && !!window.SaylerUp && SaylerUp.mirror();
+  const MODOFF = () => !!window.SaylerMods && !SaylerMods.on('ruleta');
+  const ACT = () => !MIR() && !MODOFF();
   if(IS_POPUP || IS_LIVE) document.body.classList.add('directo');
 
   const PALETTE = ['#d9c9ff','#f6a9d3','#b4ccff','#c3a8f5','#ffd0e8','#9f8ce6','#ecb9ff','#8fb0f5'];
@@ -1166,12 +1170,64 @@ details.rule .rbody .help + .row{margin-top:12px}
     }
     broadcastSync();
   }
+  /* ---- estado que se espeja entre el enlace y el panel (progreso de la ruleta + contadores) ---- */
+  const RT = { at:0, sig:'' };
+  const stCore = () => ({ pools:st.pools, users:st.users, totals:st.totals, pending:st.pending, uses:st.uses, spinsBy:st.spinsBy, trigCd:st.trigCd, userCdUntil:st.userCdUntil, cmdLast:st.cmdLast, cooldownUntil:st.cooldownUntil });
+  const upGet = () => ({ at:RT.at, d:JSON.stringify({ st:stCore(), run:C.run, snapAt:Date.now() }) });
+  function upSet(at, d, o){
+    let n; try{ n = JSON.parse(d); }catch(e){ return; }
+    if(!n || !n.st) return;
+    const bt = !!(o && (o.boot || o.seed));
+    ['pools','users','totals','pending','uses','spinsBy','trigCd','userCdUntil','cmdLast'].forEach(k => { if(n.st[k] != null) st[k] = n.st[k]; });
+    if(n.st.cooldownUntil != null) st.cooldownUntil = n.st.cooldownUntil;
+    const dt = bt ? Math.max(0, Date.now() - (n.snapAt || Date.now())) : 0;
+    const run = (n.run && typeof n.run === 'object') ? n.run : {};
+    for(const id in run){ const r = run[id]; if(!r) continue; if(dt){ r.next += dt; if(r.hideAt) r.hideAt += dt; if(r.paused && r.pausedAt) r.pausedAt += dt; } }
+    C.run = run; runSig = runStruct();
+    RT.at = +at || 0; RT.sig = JSON.stringify(stCore());
+    save(); runSave(true); updateStats(); pushIdle(true); pushCnt(true);
+  }
+  /* los contadores sobreviven a recargar la fuente de OBS: mientras la página está cerrada no avanzan */
+  const RUNKEY = 'ruleta-de-sayler-run'; let runSig = '', runT = 0;
+  const runStruct = () => JSON.stringify(Object.entries(C.run).map(([id, r]) => [id, r && r.paused ? 1 : 0, r && r.done ? 1 : 0, r && r.opt]));
+  function runSave(force){ const n = Date.now(); if(!force && n - runT < 1500) return; runT = n; try{ localStorage.setItem(RUNKEY, JSON.stringify({ at:RT.at, saved:n, run:C.run })); }catch(e){} }
+  function runLoad(){
+    try{
+      const x = JSON.parse(localStorage.getItem(RUNKEY));
+      if(x && x.run && typeof x.run === 'object'){
+        const dt = Math.max(0, Date.now() - (x.saved || Date.now()));
+        for(const id in x.run){ const r = x.run[id]; if(!r) continue; r.next += dt; if(r.hideAt) r.hideAt += dt; if(r.paused && r.pausedAt) r.pausedAt += dt; }
+        C.run = x.run;
+      }
+    }catch(e){}
+  }
+  function runTick(){
+    const sg = runStruct();
+    if(sg !== runSig){ runSig = sg; if(!MIR()){ RT.at = Date.now(); if(IS_LIVE){ try{ SaylerUp.dirty('ruleta', true); }catch(e){} } } runSave(true); }
+    else runSave(false);
+  }
+  const msQ = [];
+  function msDrain(){ if(!msQ.length) return; if(busy){ setTimeout(msDrain, 400); return; } const p = msQ.shift(); send({type:'spin', p}); runSpin(p, true); setTimeout(msDrain, 400); }
+  function mirSpin(p){ if(!MIR() || !p || !Array.isArray(p.opts) || !p.opts.length) return; msQ.push(p); msDrain(); }
+  /* interruptor + conexión: se conecta solo si es el motor activo */
+  let connKey = '';
+  function modApply(force){
+    const off = MODOFF();
+    if(!document.getElementById('sayoffCss')){ const c = document.createElement('style'); c.id = 'sayoffCss'; c.textContent = 'html.sayoff body{visibility:hidden!important}'; document.head.appendChild(c); }
+    document.documentElement.classList.toggle('sayoff', off && (IS_LIVE || IS_POPUP));
+    if(IS_POPUP) return;
+    const k = (tikOn.checked && ACT() ? 1 : 0) + '|' + (+tikPort.value || 0);
+    if(force || k !== connKey){ connKey = k; connectTik(); }
+  }
   function save(){
     if(IS_POPUP) return;
     try{
       const d = { text: optsEl.value, st: { pools:st.pools, users:st.users, totals:st.totals, pending:st.pending, uses:st.uses, spinsBy:st.spinsBy } };
       for(const k in FIELDS){ const el = FIELDS[k]; d[k] = el.type === 'checkbox' ? el.checked : el.value; }
       d.vts = vData();
+      const g = JSON.stringify(stCore());
+      if(g !== RT.sig){ RT.sig = g; RT.at = Date.now(); if(IS_LIVE){ try{ SaylerUp.dirty('ruleta'); }catch(e){} } }
+      d.rtAt = RT.at;
       localStorage.setItem(STORE, JSON.stringify(d));
       if(!IS_LIVE && window.SaylerSync) SaylerSync.changed();
     }catch(e){}
@@ -1196,6 +1252,8 @@ details.rule .rbody .help + .row{margin-top:12px}
         st.uses = q.uses || {}; st.spinsBy = q.spinsBy || {};
         st.pending = Array.isArray(q.pending) ? q.pending : [];
         if(q.pool && st.pools.gift == null) st.pools.gift = +q.pool || 0;
+        if(d.rtAt){ RT.at = +d.rtAt || 0; }
+        RT.sig = JSON.stringify(stCore());
       }
     }
   }
@@ -1204,7 +1262,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   function setKick(v){ pointer.style.transform = `translateX(-50%) rotate(${v}deg)`; }
   function settleKick(){
     kick *= .78; setKick(kick);
-    if(Math.abs(kick) > .2) RAF(settleKick); else { kick = 0; setKick(0); }
+    if(Math.abs(kick) > .2) requestAnimationFrame(settleKick); else { kick = 0; setKick(0); }
   }
   function sizeFor(t){
     const l = t.length;
@@ -1227,10 +1285,9 @@ details.rule .rbody .help + .row{margin-top:12px}
     if(!IS_POPUP) setTimeout(() => { if(!shown && !busy) applyPendingRemove(); }, 1600);
   }
 
-  let busySince = 0;
-  const RAF = f => (window.__W && __W.raf ? __W.raf(f) : requestAnimationFrame(f));
-  async function runSpin(p){
-    busy = true; busySince = Date.now(); spinBtn.disabled = true;
+  async function runSpin(p, vis){
+    if(IS_LIVE && !vis){ try{ SaylerUp.send('spin', p); }catch(e){} }
+    busy = true; spinBtn.disabled = true;
     clearTimeout(hideT);
     result.classList.remove('show');
     drawWheel(mainCanvas, p.opts);
@@ -1258,9 +1315,9 @@ details.rule .rbody .help + .row{margin-top:12px}
           sfx('tick', (1250 - 520*pr) * (.98 + Math.random()*.04));
         } else { kick *= .86; }
         setKick(kick);
-        if(pr < 1) RAF(frame); else res();
+        if(pr < 1) requestAnimationFrame(frame); else res();
       }
-      RAF(frame);
+      requestAnimationFrame(frame);
     });
 
     rot = mod(rot, 360);
@@ -1273,8 +1330,8 @@ details.rule .rbody .help + .row{margin-top:12px}
     card.dataset.size = sizeFor(p.opts[p.w]);
     result.classList.add('show');
     sfx('win');
-    if(!IS_POPUP){ vtsRun(p.opts[p.w]); sndRun(p.opts[p.w]); cntFire(p.opts[p.w]); }
-    if(!IS_POPUP){
+    if(!IS_POPUP && !vis){ vtsRun(p.opts[p.w]); sndRun(p.opts[p.w]); cntFire(p.opts[p.w]); }
+    if(!IS_POPUP && !vis){
       if(removeEl.checked) pendingRemove = p.opts[p.w];
       st.cooldownUntil = Date.now() + Math.max(0, +tikCd.value || 0) * 1000;
     }
@@ -1285,7 +1342,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   }
 
   function spin(by, manual){
-    if(IS_POPUP || busy) return;
+    if(IS_POPUP || busy || MODOFF()) return;
     applyPendingRemove();
     const opts = parse();
     if(!opts.length){
@@ -1294,8 +1351,9 @@ details.rule .rbody .help + .row{margin-top:12px}
       return;
     }
     const p = { opts, w: randInt(opts.length), off: .12 + randFloat()*.76, extra: 5 + randInt(3), dur: +durEl.value, auto: +autoEl.value, by: (showBy.checked && by) ? by : '' };
-    send({type:'spin', p});
     if(manual && !IS_LIVE && window.SaylerSync) SaylerSync.cmd('spin', p);
+    if(MIR()) return;   /* el giro lo hace el enlace y de vuelta se ve aquí igual */
+    send({type:'spin', p});
     runSpin(p);
   }
 
@@ -1320,8 +1378,7 @@ details.rule .rbody .help + .row{margin-top:12px}
     return busy || Date.now() < st.cooldownUntil || (+autoEl.value > 0 && shown);
   }
   function processQueue(){
-    if(busy && busySince && Date.now() - busySince > 45000){ busy = false; spinBtn.disabled = false; }
-    if(IS_POPUP || busy || mirrorR()) return;
+    if(IS_POPUP || busy || !ACT()) return;
     if(Date.now() < st.cooldownUntil) return;
     if(+autoEl.value > 0 && shown) return;
     if(!st.pending.length || !parse().length) return;
@@ -1420,7 +1477,7 @@ details.rule .rbody .help + .row{margin-top:12px}
     else if(type === 'like') d.likeCount = Math.max(1, Math.floor(+val || 15));
     else if(type === 'chat') d.comment = val || 'hola';
     if(!IS_LIVE && window.SaylerSync) SaylerSync.cmd('sim', { event:type, data:d });
-    onTikEvent({ event:type, data:d });
+    if(!MIR()) onTikEvent({ event:type, data:d });
   }
 
   /* ---------- mensaje cuando la ruleta está oculta ---------- */
@@ -1503,7 +1560,9 @@ details.rule .rbody .help + .row{margin-top:12px}
       off: 'Desconectado',
       connecting: 'Conectando…',
       on: 'Conectado a TikFinity',
-      retry: 'No encuentro TikFinity. Reintentando…'
+      retry: 'No encuentro TikFinity. Reintentando…',
+      mirror: '👁 Tu enlace está en marcha: aquí ves lo mismo que él (el enlace es el que cuenta)',
+      moff: '⏻ Ruleta apagada (interruptor en «Enlaces y respaldo»)'
     }[kind] || '';
   }
   function giftCoins(d){
@@ -1514,7 +1573,7 @@ details.rule .rbody .help + .row{margin-top:12px}
     return 0;
   }
   function onTikEvent(m){
-    if(!m || !m.event) return;
+    if(!m || !m.event || MODOFF()) return;
     const ev = String(m.event), d = m.data || {};
     if(ev === 'config'){ pushLog('config recibida de TikFinity'); return; }
     let kind = ev;
@@ -1565,7 +1624,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   function connectTik(){
     clearTimeout(wsTimer);
     if(ws){ try{ ws.onclose = null; ws.close(); }catch(e){} ws = null; }
-    if(!tikOn.checked || mirrorR()){ setStatus('off'); return; }
+    if(!tikOn.checked || !ACT()){ setStatus(MODOFF() ? 'moff' : MIR() ? 'mirror' : 'off'); return; }
     setStatus('connecting');
     try{
       ws = new WebSocket('ws://127.0.0.1:' + (+tikPort.value || 21213) + '/');
@@ -2374,7 +2433,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   function cFinish(c, r){
     r.done = true; r.paused = false; r.val = c.goal;
     cLogAdd('■ «' + c.name + '» llegó a la meta');
-    cPlaySound(c).catch(e => cLogAdd('⚠ ' + (e && e.message ? e.message : e)));
+    if(!MIR()) cPlaySound(c).catch(e => cLogAdd('⚠ ' + (e && e.message ? e.message : e)));
     if(c.keep > 0) r.hideAt = Date.now() + c.keep * 1000; else delete C.run[c.id];
   }
   function cStart(c, opt, manual){
@@ -2837,39 +2896,24 @@ details.rule .rbody .help + .row{margin-top:12px}
     vtsInit();
     updateStats(); pushIdle(true);
     setInterval(() => { updateStats(); pushIdle(); processQueue(); }, 400);
-    rtInit(); stInit();
+    rtInit();
+    if(!IS_POPUP){
+      runLoad(); runSig = runStruct();
+      try{
+        SaylerUp.provide('ruleta', { get:upGet, set:upSet });
+        if(IS_LIVE){ const c = new URLSearchParams(location.hash.slice(1)).get('s'); if(c) SaylerUp.link(c); }
+        else { SaylerUp.on('spin', mirSpin); }
+        SaylerUp.onAlive(() => { modApply(true); updateStats(); });
+        SaylerMods.watch(() => modApply());
+      }catch(e){ console.error(e); }
+      setInterval(runTick, 700);
+      addEventListener('pagehide', () => { runSave(true); });
+      modApply(true);
+    }
     if(!IS_LIVE && window.SaylerSync) SaylerSync.mount($('#synBox'), { skey:'ruleta-de-sayler-sync', keys:[STORE, SKEY, CKEY] });
     window.addEventListener('beforeunload', () => { try{ if(popupWin && !popupWin.closed) popupWin.close(); }catch(e){} });
   }
   /* enlace fijo: cuando llega una configuración nueva se aplica sin recargar */
-  /* ---------- un solo contador: el ENLACE cuenta y publica; el panel copia ---------- */
-  let rmTs = 0, rmSub = '', rLastM = false, rPubJ = '', rPubAt = 0;
-  const rCode = () => { try{ const s = JSON.parse(localStorage.getItem('ruleta-de-sayler-sync')); return s && s.on && s.code ? s.code : ''; }catch(e){ return ''; } };
-  function mirrorR(){ return !IS_LIVE && !IS_POPUP && Date.now() - rmTs < 1500000; }
-  function stInit(){
-    if(IS_POPUP || !window.SaylerNet) return;
-    setInterval(() => {
-      if(IS_LIVE){
-        const code = window.SaylerSync && SaylerSync.code; if(!code) return;
-        const o = { pools:st.pools, users:st.users, totals:st.totals, pending:st.pending, uses:st.uses, spinsBy:st.spinsBy };
-        const j = JSON.stringify(o), n = Date.now(), q = SaylerNet.quota(), gap = q < 100 ? 120000 : q < 180 ? 300000 : 900000;
-        if((j !== rPubJ && n - rPubAt >= gap) || n - rPubAt >= 600000){ rPubJ = j; rPubAt = n; SaylerNet.pub(code, 'ruleta', n, o); }
-      } else {
-        const c = rCode();
-        if(c && c !== rmSub){
-          rmSub = c;
-          SaylerNet.sub(c, 'ruleta', (o, ts) => {
-            if(ts <= rmTs || Date.now() - ts > 1500000) return;
-            rmTs = ts;
-            st.pools = o.pools || {}; st.users = o.users || {}; st.totals = o.totals || {};
-            st.uses = o.uses || {}; st.spinsBy = o.spinsBy || {}; st.pending = Array.isArray(o.pending) ? o.pending : [];
-            save(); updateStats(); pushIdle();
-          });
-        }
-        const m = mirrorR(); if(m !== rLastM){ rLastM = m; connectTik(); }
-      }
-    }, 5000);
-  }
   /* ---------- órdenes en tiempo real: panel → enlace ---------- */
   function rtC(op, id, paused){ if(!IS_LIVE && !IS_POPUP && window.SaylerSync) SaylerSync.cmd('cnt', { op, id, paused }); }
   const rsQ = [];
@@ -2882,6 +2926,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   function rtInit(){
     if(!IS_LIVE || !window.SaylerSync || !SaylerSync.onCmd) return;
     SaylerSync.onCmd((t, d) => {
+      try{ setTimeout(() => SaylerUp.dirty('ruleta', true), 250); }catch(e){}
       if(t === 'spin' && d && Array.isArray(d.opts) && d.opts.length){ rsQ.push(d); rsDrain(); }
       else if(t === 'hide'){ hideWheel(); }
       else if(t === 'sim' && d){ onTikEvent(d); }
@@ -2899,7 +2944,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   }
   window.__synApply = () => {
     if(IS_POPUP) return;
-    try{ load(); applySettings(); renderPreview(); sLoad(); sOpts(true); cLoad(); cRenderList(); vtsOpts(true); pushIdle(true); }
+    try{ load(); applySettings(); renderPreview(); sLoad(); sOpts(true); cLoad(); cRenderList(); vtsOpts(true); pushIdle(true); modApply(); }
     catch(e){ console.error(e); }
   };
   if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => {

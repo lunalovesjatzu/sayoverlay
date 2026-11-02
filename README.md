@@ -60,3 +60,11 @@ En la pestaña **Bebé** (zona del directo) y en la pestaña **Ruleta** (debajo 
 ## Tu configuración
 Se guarda en el navegador con las mismas claves de antes. Para llevarla a GitHub/OBS/otra PC: Exportar respaldo → súbelo como `config/respaldo.json`.
 Si el repo es público, ese archivo (códigos de Ko-fi/ntfy, imágenes) lo puede ver cualquiera.
+
+## Tiempo real de verdad (novedad)
+- **Conexión con vigilante**: si el enlace pierde la conexión sin avisar (PC dormida, internet que se corta, OBS/TikTok), se reconecta solo en menos de ~2 min y recupera lo que se perdió, en vez de quedarse «congelado» hasta recargar. También reconecta al volver el internet.
+- **Órdenes con reintento y en orden**: lo que mandas a mano desde el panel (pausar/reanudar el temporizador, pruebas, etc.) se reintenta hasta que llega, y una orden vieja nunca pisa a una más nueva (por ejemplo, un «pausar» tardío no deshace un «reanudar»).
+- **Ruleta**: el botón **Girar** (y **Ocultar**), las pruebas de «Probar sin estar en directo» y los botones de los contadores (iniciar / pausar / detener) ahora también llegan al enlace. El giro es el mismo (misma opción ganadora) que ves en la vista previa.
+- **Bebé pelón**: los botones de prueba, entregar pedido, saltar y los de acción también ocurren en el enlace.
+- Todo esto requiere la casilla **🔗 Enlace fijo** activa y el panel abierto. Las órdenes viajan por ntfy.sh en el canal `CODIGO-cmd`.
+- Ojo: ntfy.sh gratis tiene un límite de mensajes por día; si pasas muchas pruebas seguidas o cambias mucho la configuración con imágenes, puede dejar de entregar por un rato.

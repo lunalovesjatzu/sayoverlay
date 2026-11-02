@@ -53,7 +53,7 @@
  function strip(b,media,sk){const o={};for(const k in b){let j;try{j=JSON.parse(b[k])}catch(e){o[k]=b[k];continue}
   const R=RULES[k];if(R&&j&&typeof j==='object')R.drop.forEach(f=>delete j[f]);
   walk(j,v=>{if(typeof v==='string'&&v.length>=MIN&&/^data:[^,;]{1,60};base64,/i.test(v)){if(v.length>MAXIMG){if(sk)sk.n++;return ''}const h=hash(v);media[h]=v;return TOK+h}return v});o[k]=JSON.stringify(j)}return o}
- const SS=window.SaylerSync={live:LIVE,code:CODE,changed(){},mount:null};
+ const SS=window.SaylerSync={live:LIVE,code:CODE,changed(){},mount:null,cmd(){},onCmd(){}};
  let IM={};
 
  /* ===== ENLACE (OBS / TikTok): recibe y aplica ===== */
@@ -86,9 +86,29 @@
    if(Object.keys(g.p).length<g.n)return;g.done=1;const s=Array.from({length:g.n},(_,i)=>g.p[i]).join('');g.p=null;
    if(x.t==='m'){IM[x.id]=s;try{localStorage.setItem('saylerImg:'+x.id,s)}catch(e){}schedule()}
    else if(x.t==='c'&&+x.id>cvBest){cvBest=+x.id;cfgZ=s;schedule()}}
-  function open(){let w;try{w=new WebSocket(WU+'/'+encodeURIComponent(CODE)+'/ws?since=12h')}catch(e){wt=W.setTimeout(open,5000);return}
-   ws=w;w.onmessage=onMsg;w.onclose=()=>{if(ws===w)wt=W.setTimeout(open,4000)}}
+  /* conexión con vigilante: si el socket queda «muerto» sin avisar (pasa en OBS/TikTok al dormir la PC o cortarse el internet) se reabre solo */
+  let lastT=0;
+  function open(){W.clearTimeout(wt);let w;try{w=new WebSocket(WU+'/'+encodeURIComponent(CODE)+'/ws?since='+(lastT?Math.max(0,lastT-30):'12h'))}catch(e){wt=W.setTimeout(open,5000);return}
+   ws=w;let alive=Date.now();
+   const ck=W.setInterval(()=>{if(ws!==w){W.clearInterval(ck);return}if(Date.now()-alive>130000){W.clearInterval(ck);ws=null;w.onclose=null;try{w.close()}catch(e){}open()}},20000);
+   w.onopen=()=>{alive=Date.now()};
+   w.onmessage=ev=>{alive=Date.now();try{const t=JSON.parse(ev.data).time;if(t>lastT)lastT=t}catch(e){}onMsg(ev)};
+   w.onclose=()=>{W.clearInterval(ck);if(ws===w)wt=W.setTimeout(open,3000)}}
+  addEventListener('online',()=>{if(ws){ws.onclose=null;try{ws.close()}catch(e){}ws=null}open()});
   open();
+  /* órdenes en tiempo real (giro, pruebas, contadores…) que llegan del panel por el canal CODIGO-cmd */
+  const cmdSubs=[],pendC=[],seenC=new Set(),CT0=Math.floor(Date.now()/1000)-20;let cLast=0,cws=null,cwt=0;
+  SS.onCmd=f=>{cmdSubs.push(f);pendC.splice(0).forEach(m=>{try{f(m.t,m.d)}catch(e){console.error(e)}})};
+  function copen(){W.clearTimeout(cwt);let w;try{w=new WebSocket(WU+'/'+encodeURIComponent(CODE+'-cmd')+'/ws?since='+(cLast?Math.max(CT0,cLast-3):CT0))}catch(e){cwt=W.setTimeout(copen,5000);return}
+   cws=w;let alive=Date.now();
+   const ck=W.setInterval(()=>{if(cws!==w){W.clearInterval(ck);return}if(Date.now()-alive>130000){W.clearInterval(ck);cws=null;w.onclose=null;try{w.close()}catch(e){}copen()}},20000);
+   w.onopen=()=>{alive=Date.now()};
+   w.onmessage=ev=>{alive=Date.now();let o,x;try{o=JSON.parse(ev.data);if(o.event!=='message')return;x=JSON.parse(o.message)}catch(e){return}
+    if(o.time>cLast)cLast=o.time;if(!x||x.v!==3||!x.id||seenC.has(x.id))return;seenC.add(x.id);if(seenC.size>300)seenC.delete(seenC.values().next().value);
+    if(!cmdSubs.length){pendC.push(x);return}cmdSubs.forEach(f=>{try{f(x.t,x.d)}catch(e){console.error(e)}})};
+   w.onclose=()=>{W.clearInterval(ck);if(cws===w)cwt=W.setTimeout(copen,3000)}}
+  addEventListener('online',()=>{if(cws){cws.onclose=null;try{cws.close()}catch(e){}cws=null}copen()});
+  copen();
  }
 
  /* ===== PANEL: publica los cambios ===== */
@@ -99,22 +119,28 @@
   const say=t=>{try{o.onStatus&&o.onStatus(t)}catch(e){}},SK='saylerPub:'+st.code;
   const loadSent=()=>{try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return{}}},saveSent=s=>{try{localStorage.setItem(SK,JSON.stringify(s))}catch(e){}};
   const collect=()=>{const b={};o.keys.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)b[k]=v}catch(e){}});return b};
-  async function post(body){for(let a=0;a<8;a++){try{const r=await fetch(HU+'/'+encodeURIComponent(st.code),{method:'POST',body});if(r.ok)return;if(r.status!==429&&r.status<500)break}catch(e){}await sleep(a<2?2500:6000)}throw new Error('post')}
+  async function post(body){for(let a=0;a<8;a++){try{const r=await fetch(HU+'/'+encodeURIComponent(st.code),{method:'POST',body});if(r.ok)return;if(r.status===429){await sleep(45000);continue}if(r.status<500)break}catch(e){}await sleep(a<2?2500:6000)}throw new Error('post')}
   async function parts(t,id,text,label){const n=Math.ceil(text.length/SZ);for(let i=0;i<n;i++){if(label&&n>6&&i%6===0)say(label+' ('+i+'/'+n+')');await post(JSON.stringify({v:2,t,id,i,n,d:text.slice(i*SZ,(i+1)*SZ)}))}}
+  /* órdenes al enlace: en fila (llegan en orden) y con reintentos hasta que ntfy las acepta */
+  let cq=Promise.resolve();
+  async function postCmd(body){const tp=HU+'/'+encodeURIComponent(st.code+'-cmd'),dl=[300,700,1500,3000,5000,8000];for(let a=0;a<=dl.length;a++){try{const r=await fetch(tp,{method:'POST',body});if(r.ok)return true;if(r.status!==429&&r.status<500)return false}catch(e){}if(a<dl.length)await sleep(dl[a])}return false}
+  const cmd=(t,d)=>{if(!st.on)return;const body=JSON.stringify({v:3,id:Math.random().toString(36).slice(2)+Date.now().toString(36),t,d,ts:Date.now()});
+   if(body.length>3800){say('⚠ Esa orden pesa demasiado para viajar al enlace');return}
+   cq=cq.then(()=>postCmd(body)).then(ok=>{if(!ok)say('⚠ No pude mandar la orden al enlace (¿sin internet?)')}).catch(()=>{})};
   let lastTxt='',busy=0,timer=0;
   const soon=now=>{W.clearTimeout(timer);if(!st.on)return;timer=W.setTimeout(()=>pubNow(now),now?200:600)};
   async function pubNow(force){if(!st.on||busy)return;const media={},sk={n:0},txt=JSON.stringify(strip(collect(),media,sk)),sent=loadSent(),now=Date.now();
-   const need=Object.keys(media).filter(h=>!sent[h]||now-sent[h]>6*36e5);
+   const need=Object.keys(media).filter(h=>!sent[h]||now-sent[h]>72*36e5);
    if(txt===lastTxt&&!force&&!need.length)return;busy=1;let ok=0;const skipped=sk.n;
    try{let i=0;for(const h of need){i++;await parts('m',h,media[h],'⏳ Subiendo imagen '+i+' de '+need.length);sent[h]=Date.now();saveSent(sent)}
     await parts('c',Date.now(),await zipTxt(txt));lastTxt=txt;ok=1;
     say('✔ Enlace al día · '+new Date().toLocaleTimeString()+(skipped?' · ⚠ '+skipped+' imagen(es) pesan demasiado (más de ~220 KB) y no viajan por el enlace: usa una más liviana':''))}
    catch(e){say('⚠ No pude actualizar el enlace (¿sin internet?). Lo intento otra vez en un momento.');W.clearTimeout(timer);timer=W.setTimeout(()=>pubNow(),30000)}
    busy=0;if(ok&&JSON.stringify(strip(collect(),{}))!==lastTxt)soon()}
-  return{get on(){return st.on},get code(){return st.code},changed:()=>soon(),start:()=>soon(true),
+  return{get on(){return st.on},get code(){return st.code},cmd,changed:()=>soon(),start:()=>soon(true),
    setOn(v){st.on=v?1:0;sv();if(st.on)soon(true);else say('Enlace fijo apagado: el enlace usa la copia de config/respaldo.json.')}}}
 
- let cur=null;SS.changed=()=>{if(cur)cur.changed()};
+ let cur=null;SS.changed=()=>{if(cur)cur.changed()};SS.cmd=(t,d)=>{if(cur)cur.cmd(t,d)};
  SS.mount=function(el,o){if(!el||LIVE)return null;
   if(!document.getElementById('synCss')){const c=document.createElement('style');c.id='synCss';
    c.textContent='.synbox{margin-top:16px;padding:14px 16px;border:1px dashed rgba(247,240,255,.4);border-radius:18px;text-align:left}.synlb{display:flex;gap:8px;align-items:center;font-weight:700;cursor:pointer}.synrow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}.synrow input{flex:1;min-width:160px;background:rgba(255,255,255,.1);color:inherit;border:1px solid rgba(247,240,255,.28);border-radius:12px;padding:8px 10px;font:600 .85rem Quicksand,sans-serif}.synhelp{font-size:.85rem;opacity:.75;line-height:1.5;margin:10px 0 0}body.mini .synbox{display:none}.synmsg{margin:8px 0 0;min-height:1.2em;color:var(--blush,#f4b3d6);font-weight:600;font-size:.9rem}';

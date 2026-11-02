@@ -562,6 +562,11 @@ function sync(){if(!POP)post({s:S})}
 const seen=new Set();function onMsg(m){if(!m||seen.has(m.id))return;seen.add(m.id);if(seen.size>60)seen.delete(seen.values().next().value);if(POP){if(m.s){S=m.s;apply();gt()}if(m.j)RS.add(m.j)}else if(m.hello)sync()}
 if(bc)bc.onmessage=e=>onMsg(e.data);addEventListener('message',e=>onMsg(e.data));
 function dispatch(j){if(j.t=='o'&&j.gj==null)j.gj=Math.random()*2-1;if(j.t=='g'&&j.mm==null){const I=(j.its||[]).filter(Boolean);if(I.length>1){const gl=lines(S.gen).filter(l=>!/\{item\}/.test(l));j.mm=gl.length?pk(gl):pickMsg(I[I.length-1])}else j.mm=I.length?pickMsg(I[0]):''}if(j.t=='d'&&j.cm==null)j.cm=pickCancel();if(j.t=='k'&&j.msg==null)j.msg=pickKJ(j.kd);RS.add(j);post({j})}
+/* órdenes en tiempo real panel → enlace: lo que haces a mano (probar, entregar, saltar…) también ocurre en el enlace */
+const slimIts=a=>(a||[]).map(it=>{const i=S.items.indexOf(it);return i>=0?{__i:i}:it?{...it,i:String(it.i||'').length>400?'':it.i}:null});
+const fatIts=a=>(a||[]).map(it=>it&&it.__i!=null?S.items[it.__i]:it).filter(Boolean);
+const man=j=>{dispatch(j);if(!POP&&!LIVE&&window.SaylerSync){const c=JSON.parse(JSON.stringify(j,(k,v)=>k==='its'&&Array.isArray(v)?slimIts(v):v));SaylerSync.cmd('job',c)}};
+if(LIVE&&window.SaylerSync&&SaylerSync.onCmd)SaylerSync.onCmd((t,d)=>{if(t==='job'&&d&&d.t){if(d.its)d.its=fatIts(d.its);if(d.tg&&d.tg.its)d.tg.its=fatIts(d.tg.its);RS.add(d)}});
 if(POP||LIVE){try{navigator.locks&&navigator.locks.request('angelito-awake',()=>new Promise(()=>{})).catch(()=>{})}catch(e){}setInterval(gt,700);const h=()=>post({hello:1});h();setInterval(h,2500);document.title='Angelito - directo'}
 /* ---- registro ---- */
 function log(t){const l=$('#log');if(!l)return;l.textContent=(l.textContent=='Nada todavía.'?'':l.textContent+'\n')+t;l.scrollTop=1e9}
@@ -627,7 +632,7 @@ if(!POP){
  $('#give').onclick=e=>{const b=e.target.closest('[data-g]');if(b&&TY.length<12){TY.push(+b.dataset.g);tr()}};
   $('#tray').onclick=e=>{const b=e.target.closest('[data-r]');if(!b)return;const i=TY.lastIndexOf(+b.dataset.r);if(i>=0)TY.splice(i,1);tr()};
   $('#clr').onclick=()=>{TY.length=0;tr()};
-  $('#deliver').onclick=()=>{if(!TY.length){$('#pm').textContent='Elige primero algún objeto para el pedido.';return}unlock();$('#pm').textContent='';const its=TY.map(i=>S.items[i]).filter(Boolean);TY.length=0;tr();dispatch({t:'g',its,u:''})};
+  $('#deliver').onclick=()=>{if(!TY.length){$('#pm').textContent='Elige primero algún objeto para el pedido.';return}unlock();$('#pm').textContent='';const its=TY.map(i=>S.items[i]).filter(Boolean);TY.length=0;tr();man({t:'g',its,u:''})};
  $('#thF').onclick=()=>$('#upF').click();$('#thB').onclick=()=>$('#upB').click();
  $('#upF').onclick=()=>pick(700,u=>{S.fi_=u;save();apply();sync()});$('#upB').onclick=()=>pick(700,u=>{S.bi_=u;save();apply();sync()});$('#rstI').onclick=()=>{S.fi_=S.bi_='';save();apply();sync()};
  $('#pvPlay').onclick=()=>{unlock();pv.say($('#sample').value,'Sayler')};$('#pvFlip').onclick=()=>pv.flip();let tkOn=0;$('#pvTk').onclick=()=>{tkOn=!tkOn;pv.tk(tkOn?'Sayler':null,$('#sample').value)};$('#pvAn').onclick=()=>pv.demo();
@@ -635,14 +640,14 @@ if(!POP){
  const showPv=()=>{unlock();const r=pv.root.getBoundingClientRect();if(r.bottom<60||r.top>innerHeight-60)pv.root.scrollIntoView({behavior:'smooth',block:'center'})};
  const pvCx=()=>{showPv();const m=pickCancel();pv.cancel(m?fill(m,'Sayler'):'','Sayler',$('#sample').value)};
  $('#pvCx').onclick=pvCx;$('#pvCx2').onclick=pvCx;$('#pvRej2').onclick=()=>{showPv();pv.rej(rejInfo('Sayler').np,'Sayler',$('#sample').value)};
- $('#skip').onclick=()=>dispatch({t:'d'});
-  const kjGo=k=>{if(!RS.has()&&!stage.on){$('#pm').textContent='El personaje no está en pantalla.';return}unlock();$('#pm').textContent='';dispatch({t:'k',kd:k})};
+ $('#skip').onclick=()=>man({t:'d'});
+  const kjGo=k=>{if(!RS.has()&&!stage.on){$('#pm').textContent='El personaje no está en pantalla.';return}unlock();$('#pm').textContent='';man({t:'k',kd:k})};
   $('#kick').onclick=()=>kjGo('kick');$('#jail').onclick=()=>kjGo('jail');
   const pvKJ=k=>()=>{showPv();const m=pickKJ(k);pv.kick(k,m?fill(m,'Sayler'):'','Sayler',$('#sample').value)};
   ['pvKick','pvKick2'].forEach(i=>$('#'+i).onclick=pvKJ('kick'));['pvJail','pvJail2'].forEach(i=>$('#'+i).onclick=pvKJ('jail'));$('#flip').onclick=()=>{stage.flip()};
- $('#test').onclick=()=>{unlock();dispatch({t:'o',u:'Sayler',p:split($('#sample').value),raw:$('#sample').value})};
- $('#testQ').onclick=()=>{unlock();[['Ana','¡Quiero un cafecito, por favor!'],['Beto','Un pastelito con fresas ♥'],['Caro','¿Me regalas una rosa?']].forEach(([u,t])=>dispatch({t:'o',u,p:split(t),raw:t}))};
- $('#testR').onclick=()=>{unlock();const t=$('#sample').value;dispatch({t:'o',u:'Sayler',p:split(t),raw:t,tg:{its:[S.items[0]],fr:1}})};
+ $('#test').onclick=()=>{unlock();man({t:'o',u:'Sayler',p:split($('#sample').value),raw:$('#sample').value})};
+ $('#testQ').onclick=()=>{unlock();[['Ana','¡Quiero un cafecito, por favor!'],['Beto','Un pastelito con fresas ♥'],['Caro','¿Me regalas una rosa?']].forEach(([u,t])=>man({t:'o',u,p:split(t),raw:t}))};
+ $('#testR').onclick=()=>{unlock();const t=$('#sample').value;man({t:'o',u:'Sayler',p:split(t),raw:t,tg:{its:[S.items[0]],fr:1}})};
  $('#tsnd').onclick=()=>{unlock();setTimeout(()=>'Hola mundo'.split('').forEach((c,i)=>setTimeout(()=>sfx('blip',c),i*90)),100)};
  $('#sim').onclick=()=>{const r=$('#sR').value;chat({uniqueId:$('#sU').value,nickname:$('#sU').value,comment:$('#sT').value,isModerator:r=='mod',isSubscriber:r=='sub'})};
  $('#pop').onclick=()=>{pw=open(location.href.split('#')[0]+'#directo','angelitoDirecto','popup=yes,width=960,height=540');$('#pm').textContent=pw?'Ventana abierta. Haz clic dentro una vez para activar el sonido y captúrala en tu stream.':'El navegador bloqueó la ventana. Permite las ventanas emergentes.';setTimeout(sync,900)};

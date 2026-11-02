@@ -1204,7 +1204,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   function setKick(v){ pointer.style.transform = `translateX(-50%) rotate(${v}deg)`; }
   function settleKick(){
     kick *= .78; setKick(kick);
-    if(Math.abs(kick) > .2) requestAnimationFrame(settleKick); else { kick = 0; setKick(0); }
+    if(Math.abs(kick) > .2) RAF(settleKick); else { kick = 0; setKick(0); }
   }
   function sizeFor(t){
     const l = t.length;
@@ -1227,8 +1227,10 @@ details.rule .rbody .help + .row{margin-top:12px}
     if(!IS_POPUP) setTimeout(() => { if(!shown && !busy) applyPendingRemove(); }, 1600);
   }
 
+  let busySince = 0;
+  const RAF = f => (window.__W && __W.raf ? __W.raf(f) : requestAnimationFrame(f));
   async function runSpin(p){
-    busy = true; spinBtn.disabled = true;
+    busy = true; busySince = Date.now(); spinBtn.disabled = true;
     clearTimeout(hideT);
     result.classList.remove('show');
     drawWheel(mainCanvas, p.opts);
@@ -1256,9 +1258,9 @@ details.rule .rbody .help + .row{margin-top:12px}
           sfx('tick', (1250 - 520*pr) * (.98 + Math.random()*.04));
         } else { kick *= .86; }
         setKick(kick);
-        if(pr < 1) requestAnimationFrame(frame); else res();
+        if(pr < 1) RAF(frame); else res();
       }
-      requestAnimationFrame(frame);
+      RAF(frame);
     });
 
     rot = mod(rot, 360);
@@ -1318,6 +1320,7 @@ details.rule .rbody .help + .row{margin-top:12px}
     return busy || Date.now() < st.cooldownUntil || (+autoEl.value > 0 && shown);
   }
   function processQueue(){
+    if(busy && busySince && Date.now() - busySince > 45000){ busy = false; spinBtn.disabled = false; }
     if(IS_POPUP || busy) return;
     if(Date.now() < st.cooldownUntil) return;
     if(+autoEl.value > 0 && shown) return;

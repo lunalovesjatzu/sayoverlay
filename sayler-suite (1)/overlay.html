@@ -325,7 +325,7 @@ function layout(anim){const cand=rows.filter(w=>!w.hid);rows.forEach(w=>w.r.styl
   build();particles();tk(1);clearTimeout(T1);clearTimeout(T2);show();
   const c=JSON.stringify(cfg.c);if(c!=lastC){lastC=c;conn()}}
  function sendProg(){if(!lastR||!(type=='metas'||type=='barra'))return;if(pv){const j0=JSON.stringify(lastR);if(j0!==lastPP){lastPP=j0;try{parent.postMessage({t:'pprog',type,pv,R:lastR},'*')}catch(_){}}return}try{bc.postMessage({t:'prog',type,R:lastR})}catch(_){}
-  if(SYN){const j=JSON.stringify(lastR),n=Date.now();if(j!==lastPubR&&n-lastPubT>4000){lastPubR=j;lastPubT=n;try{fetch('https://'+SYNC_HOST+'/'+encodeURIComponent(SYN)+'-prog',{method:'POST',body:JSON.stringify({R:lastR})}).catch(()=>{})}catch(_){}}}}
+  if(SYN){const j=JSON.stringify(lastR),n=Date.now();if(j!==lastPubR&&n-lastPubT>60000){lastPubR=j;lastPubT=n;try{fetch('https://'+SYNC_HOST+'/'+encodeURIComponent(SYN)+'-prog',{method:'POST',body:JSON.stringify({R:lastR})}).catch(()=>{})}catch(_){}}}}
  function syncOpen(){clearTimeout(swT);if(sw){sw.onclose=null;try{sw.close()}catch(_){}sw=null}if(!SYN)return;lastTxt=localStorage.ovlC||'';lastV=+localStorage.ovlCv||0;
   const go=()=>{if(!SYN)return;let w;try{w=new WebSocket('wss://'+SYNC_HOST+'/'+encodeURIComponent(SYN)+'/ws?since='+(syncLast?Math.max(0,syncLast-30):'12h'))}catch(_){swT=setTimeout(go,5000);return}sw=w;let al=Date.now();
    const ck=setInterval(()=>{if(sw!==w){clearInterval(ck);return}if(Date.now()-al>130000){clearInterval(ck);sw=null;w.onclose=null;try{w.close()}catch(_){}go()}},20000);
@@ -349,7 +349,7 @@ function layout(anim){const cand=rows.filter(w=>!w.hid);rows.forEach(w=>w.r.styl
   SK='ovl-st-'+type+(pv?'-pv'+pv:'');st=null;
    try{st=JSON.parse(localStorage[SK])}catch(_){}
    if(!st)st={t:{},ep:cfg.ep};
-   if(!booted){booted=1;if(type=='time'){st.tp=1;if(st.tm)st.tm.last=Date.now();save()}}
+   if(!booted){booted=1;if(type=='time'){if(st.tm)st.tm.last=Date.now();save()}}
    lastC='';apply();syncOpen();cmdOpen()}
  const dup=d=>{if(!d.id)return 0;if(seenId.has(d.id))return 1;seenId.add(d.id);if(seenId.size>300)seenId.delete(seenId.values().next().value);return 0};
   const rx=m=>{const d=m.data||{};if(d.t=='cfg'){cfg=merge(DEF(),d.cfg);apply()}else if(d.t=='ev'){if(!dup(d))ingest({...d.e})}else if(d.t=='tcmd'&&type=='time'){if(!dup(d)){if((d.c=='pause'||d.c=='resume')&&d.ts){if(d.ts<(window.__lpr||0))return;window.__lpr=d.ts}tcmd(d)}}else if(d.t=='pg'&&pv&&type=='metas'){pgN+=d.d||0;layout(1)}else if(d.t=='pvh'&&pv){PVH=d.on?1:0;if(!PVH){clearTimeout(T1);clearTimeout(T2);if(!vis)show()}else arm()}else if(d.t=='pvs'&&pv){PVSND=d.on?1:0}};

@@ -119,7 +119,7 @@
   const say=t=>{try{o.onStatus&&o.onStatus(t)}catch(e){}},SK='saylerPub:'+st.code;
   const loadSent=()=>{try{return JSON.parse(localStorage.getItem(SK))||{}}catch(e){return{}}},saveSent=s=>{try{localStorage.setItem(SK,JSON.stringify(s))}catch(e){}};
   const collect=()=>{const b={};o.keys.forEach(k=>{try{const v=localStorage.getItem(k);if(v!=null)b[k]=v}catch(e){}});return b};
-  async function post(body){for(let a=0;a<8;a++){try{const r=await fetch(HU+'/'+encodeURIComponent(st.code),{method:'POST',body});if(r.ok)return;if(r.status!==429&&r.status<500)break}catch(e){}await sleep(a<2?2500:6000)}throw new Error('post')}
+  async function post(body){for(let a=0;a<8;a++){try{const r=await fetch(HU+'/'+encodeURIComponent(st.code),{method:'POST',body});if(r.ok)return;if(r.status===429){await sleep(45000);continue}if(r.status<500)break}catch(e){}await sleep(a<2?2500:6000)}throw new Error('post')}
   async function parts(t,id,text,label){const n=Math.ceil(text.length/SZ);for(let i=0;i<n;i++){if(label&&n>6&&i%6===0)say(label+' ('+i+'/'+n+')');await post(JSON.stringify({v:2,t,id,i,n,d:text.slice(i*SZ,(i+1)*SZ)}))}}
   /* órdenes al enlace: en fila (llegan en orden) y con reintentos hasta que ntfy las acepta */
   let cq=Promise.resolve();
@@ -130,7 +130,7 @@
   let lastTxt='',busy=0,timer=0;
   const soon=now=>{W.clearTimeout(timer);if(!st.on)return;timer=W.setTimeout(()=>pubNow(now),now?200:600)};
   async function pubNow(force){if(!st.on||busy)return;const media={},sk={n:0},txt=JSON.stringify(strip(collect(),media,sk)),sent=loadSent(),now=Date.now();
-   const need=Object.keys(media).filter(h=>!sent[h]||now-sent[h]>6*36e5);
+   const need=Object.keys(media).filter(h=>!sent[h]||now-sent[h]>72*36e5);
    if(txt===lastTxt&&!force&&!need.length)return;busy=1;let ok=0;const skipped=sk.n;
    try{let i=0;for(const h of need){i++;await parts('m',h,media[h],'⏳ Subiendo imagen '+i+' de '+need.length);sent[h]=Date.now();saveSent(sent)}
     await parts('c',Date.now(),await zipTxt(txt));lastTxt=txt;ok=1;

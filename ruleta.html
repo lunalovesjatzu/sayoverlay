@@ -1321,7 +1321,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   }
   function processQueue(){
     if(busy && busySince && Date.now() - busySince > 45000){ busy = false; spinBtn.disabled = false; }
-    if(IS_POPUP || busy) return;
+    if(IS_POPUP || busy || mirrorR()) return;
     if(Date.now() < st.cooldownUntil) return;
     if(+autoEl.value > 0 && shown) return;
     if(!st.pending.length || !parse().length) return;
@@ -1565,7 +1565,7 @@ details.rule .rbody .help + .row{margin-top:12px}
   function connectTik(){
     clearTimeout(wsTimer);
     if(ws){ try{ ws.onclose = null; ws.close(); }catch(e){} ws = null; }
-    if(!tikOn.checked){ setStatus('off'); return; }
+    if(!tikOn.checked || mirrorR()){ setStatus('off'); return; }
     setStatus('connecting');
     try{
       ws = new WebSocket('ws://127.0.0.1:' + (+tikPort.value || 21213) + '/');
@@ -2837,11 +2837,39 @@ details.rule .rbody .help + .row{margin-top:12px}
     vtsInit();
     updateStats(); pushIdle(true);
     setInterval(() => { updateStats(); pushIdle(); processQueue(); }, 400);
-    rtInit();
+    rtInit(); stInit();
     if(!IS_LIVE && window.SaylerSync) SaylerSync.mount($('#synBox'), { skey:'ruleta-de-sayler-sync', keys:[STORE, SKEY, CKEY] });
     window.addEventListener('beforeunload', () => { try{ if(popupWin && !popupWin.closed) popupWin.close(); }catch(e){} });
   }
   /* enlace fijo: cuando llega una configuración nueva se aplica sin recargar */
+  /* ---------- un solo contador: el ENLACE cuenta y publica; el panel copia ---------- */
+  let rmTs = 0, rmSub = '', rLastM = false, rPubJ = '', rPubAt = 0;
+  const rCode = () => { try{ const s = JSON.parse(localStorage.getItem('ruleta-de-sayler-sync')); return s && s.on && s.code ? s.code : ''; }catch(e){ return ''; } };
+  function mirrorR(){ return !IS_LIVE && !IS_POPUP && Date.now() - rmTs < 1500000; }
+  function stInit(){
+    if(IS_POPUP || !window.SaylerNet) return;
+    setInterval(() => {
+      if(IS_LIVE){
+        const code = window.SaylerSync && SaylerSync.code; if(!code) return;
+        const o = { pools:st.pools, users:st.users, totals:st.totals, pending:st.pending, uses:st.uses, spinsBy:st.spinsBy };
+        const j = JSON.stringify(o), n = Date.now(), q = SaylerNet.quota(), gap = q < 100 ? 120000 : q < 180 ? 300000 : 900000;
+        if((j !== rPubJ && n - rPubAt >= gap) || n - rPubAt >= 600000){ rPubJ = j; rPubAt = n; SaylerNet.pub(code, 'ruleta', n, o); }
+      } else {
+        const c = rCode();
+        if(c && c !== rmSub){
+          rmSub = c;
+          SaylerNet.sub(c, 'ruleta', (o, ts) => {
+            if(ts <= rmTs || Date.now() - ts > 1500000) return;
+            rmTs = ts;
+            st.pools = o.pools || {}; st.users = o.users || {}; st.totals = o.totals || {};
+            st.uses = o.uses || {}; st.spinsBy = o.spinsBy || {}; st.pending = Array.isArray(o.pending) ? o.pending : [];
+            save(); updateStats(); pushIdle();
+          });
+        }
+        const m = mirrorR(); if(m !== rLastM){ rLastM = m; connectTik(); }
+      }
+    }, 5000);
+  }
   /* ---------- órdenes en tiempo real: panel → enlace ---------- */
   function rtC(op, id, paused){ if(!IS_LIVE && !IS_POPUP && window.SaylerSync) SaylerSync.cmd('cnt', { op, id, paused }); }
   const rsQ = [];

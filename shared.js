@@ -152,4 +152,23 @@
   ck.checked=!!P.on;draw();ck.onchange=()=>{P.setOn(ck.checked);draw()};
   q('.sycp').onclick=e=>{const b=e.currentTarget;try{navigator.clipboard.writeText(url.value)}catch(x){url.select();document.execCommand('copy')}b.textContent='✔ Copiado';W.setTimeout(()=>b.textContent='📋 Copiar enlace',1500)};
   P.start();return P};
+
+ /* ===== SaylerNet: el ENLACE cuenta y publica su estado; el PANEL lo copia (así nunca se separan) ===== */
+ const QK='saylerQ',dayS=()=>new Date().toISOString().slice(0,10);
+ const qadd=()=>{try{let q=JSON.parse(localStorage.getItem(QK))||{};if(q.d!==dayS())q={d:dayS(),n:0};q.n++;localStorage.setItem(QK,JSON.stringify(q))}catch(e){}};
+ const qget=()=>{try{const q=JSON.parse(localStorage.getItem(QK));return q&&q.d===dayS()?q.n:0}catch(e){return 0}};
+ async function postN(topic,body){for(let a=0;a<4;a++){try{const r=await fetch(HU+'/'+encodeURIComponent(topic),{method:'POST',body});if(r.ok){qadd();return true}if(r.status===429){await sleep(45000);continue}if(r.status<500)return false}catch(e){}await sleep(2500)}return false}
+ let pq=Promise.resolve();
+ window.SaylerNet={quota:qget,
+  pub(code,name,ts,obj){const id=Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+   return pq=pq.then(async()=>{const z=await zipTxt(JSON.stringify(obj)),n=Math.ceil(z.length/3400)||1;for(let i=0;i<n;i++){if(!await postN(code+'-st',JSON.stringify({v:4,n:name,ts,id,i,c:n,d:z.slice(i*3400,(i+1)*3400)})))return false}return true}).catch(()=>false)},
+  sub(code,name,cb){const G={};let ws=null,wt=0,last=0;
+   const open=()=>{W.clearTimeout(wt);let w;try{w=new WebSocket(WU+'/'+encodeURIComponent(code+'-st')+'/ws?since='+(last?Math.max(0,last-5):'12h'))}catch(e){wt=W.setTimeout(open,5000);return}
+    ws=w;let alive=Date.now();const ck=W.setInterval(()=>{if(ws!==w){W.clearInterval(ck);return}if(Date.now()-alive>130000){W.clearInterval(ck);ws=null;w.onclose=null;try{w.close()}catch(e){}open()}},20000);
+    w.onopen=()=>{alive=Date.now()};
+    w.onmessage=async ev=>{alive=Date.now();let o,x;try{o=JSON.parse(ev.data);if(o.event!=='message')return;x=JSON.parse(o.message)}catch(e){return}
+     if(o.time>last)last=o.time;if(!x||x.v!==4||x.n!==name)return;const g=G[x.id]||(G[x.id]={p:{},c:x.c});g.p[x.i]=x.d;if(Object.keys(g.p).length<g.c)return;delete G[x.id];
+     try{const z=Array.from({length:g.c},(_,i)=>g.p[i]).join('');cb(JSON.parse(await unzipTxt(z)),x.ts)}catch(e){}};
+    w.onclose=()=>{W.clearInterval(ck);if(ws===w)wt=W.setTimeout(open,3000)}};
+   open()}};
 })();

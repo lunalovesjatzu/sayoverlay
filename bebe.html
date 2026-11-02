@@ -598,7 +598,11 @@ function chat(d){const user=String(d.uniqueId||d.nickname||'anon').toLowerCase()
  const n=Date.now();if(n<gcd||n<(U[user]||0))return log('· en espera: '+name);if(RS.Q.length>=S.q)return log('· cola llena');
  gcd=n+S.cd*1000;U[user]=n+S.ucd*1000;const p=split(m);log('✦ '+name+': '+m+(p.length>1?' ('+p.length+' partes)':''));dispatch({t:'o',u:name,p,raw:m,mod:!!mod,sub:!!sub})}
 function onTik(m){if(m&&(m.event=='chat'||m.event=='comment'))chat(m.data||{})}
-let ws,wt;function conn(){clearTimeout(wt);if(ws){ws.onclose=null;try{ws.close()}catch(e){}ws=null}const d=$('#dot'),s=$('#st');if(!S.on){d.className='dot';s.textContent='Desconectado';return}
+/* un solo contador: el ENLACE atiende el chat; el panel solo mira (si el enlace no responde, atiende el panel) */
+let mTs=0,mSubC='',lastMir=false,hbAt=0;const mir=()=>!LIVE&&!POP&&Date.now()-mTs<1500000;
+const bCode=()=>{try{const s=JSON.parse(localStorage.getItem(KEY+'-sync'));return s&&s.on&&s.code?s.code:''}catch(e){return ''}};
+if(!POP&&window.SaylerNet)setInterval(()=>{if(LIVE){const c=window.SaylerSync&&SaylerSync.code;if(c&&Date.now()-hbAt>=600000){hbAt=Date.now();SaylerNet.pub(c,'bebe',hbAt,{h:1})}}else{const c=bCode();if(c&&c!==mSubC){mSubC=c;SaylerNet.sub(c,'bebe',(o,ts)=>{if(ts>mTs)mTs=ts})}const m=mir();if(m!==lastMir){lastMir=m;conn()}}},5000);
+let ws,wt;function conn(){clearTimeout(wt);if(ws){ws.onclose=null;try{ws.close()}catch(e){}ws=null}const d=$('#dot'),s=$('#st');if(!S.on||mir()){d.className='dot';s.textContent=mir()?'El enlace del directo está atendiendo (aquí solo miras)':'Desconectado';return}
  try{ws=new WebSocket('ws://127.0.0.1:'+(S.port||21213)+'/')}catch(e){wt=setTimeout(conn,3000);return}
  ws.onopen=()=>{d.className='dot on';s.textContent='Conectado a TikFinity'};ws.onmessage=e=>{try{onTik(JSON.parse(e.data))}catch(x){}};ws.onclose=()=>{d.className='dot retry';s.textContent='No encuentro TikFinity. Reintentando…';wt=setTimeout(conn,3000)}}
 /* ---- imágenes y entregas ---- */
